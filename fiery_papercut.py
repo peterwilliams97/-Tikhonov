@@ -37,7 +37,7 @@
         Scan through all jobs on Fiery (see fy_reqStart, fy_reqCount) 
         Enable page level color detection for Fiery printer
         Remove exit()s in production code
-        Add other more Fiery job attributes to PaperCut jobs
+        Add more Fiery job attributes to PaperCut jobs
         Fix PaperCut server\printer name for Fierys
 """
 from __future__ import division
