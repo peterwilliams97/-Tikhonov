@@ -1,6 +1,27 @@
 # -*- coding: utf-8 -*-
 """
     Script to test Fiery cost accounting API working with PaperCut
+    
+    Assumes access to a Fiery and a PaperCut server
+    
+    PaperCut Setup
+    --------------
+    A PaperCut server can setup in a few minutes by downloading the trial
+    version from http://www.papercut.com/ . 
+    
+    If you do this then please  set the admin password to "password" or 
+    change DEFAULT_PAPERCUT_PWD to the PaperCut admin password.
+    
+    Viewing Fiery jobs in PaperCut
+    -------------------------------
+    The easiest way to view the Fiery jobs on PaperCut is with a web browser.
+    
+        Go to http://<papercut server address>:9191/app?service=page/AccountList
+            (e.g. http://localhost:9191/app?service=page/AccountList if the server is 
+            running on your computer)
+        Click on the Fiery-account link  
+        Click on the Job Log tab    
+ 
 
     DEFAULT_* contain all default states
     Update DEFAULT_* to reflect your environment or vice-versa
@@ -8,6 +29,7 @@
     TODO:
         Handle multiple Fierys
         Scan through all jobs on Fiery (see fy_reqStart, fy_reqCount) 
+        Enable page level color detection for Fiery printer
 """
 from __future__ import division
 
@@ -144,18 +166,18 @@ def papercut_init(host_name, port, auth_token, account_name):
     """
 
     print('Connecting to papercut host %s:%d' % (host_name, port))
-    
+
     server = xmlrpclib.Server('http://%s:%d/rpc/api/xmlrpc' % (host_name, port))
-    
+
     if server.api.isSharedAccountExists(auth_token, account_name):
         print('PaperCut Shared Account "%s" account already exists.' % account_name)
     else:
         # user does not exist so create
         print('Creating PaperCut Shared Account "%s"' % account_name)
         server.api.addNewSharedAccount(auth_token, account_name)
-        
+
     return server    
-    
+
 def papercut_log_jobs(server, auth_token, pc_jobs):
     """Record Fiery jobs in PaperCut job log
         
@@ -191,11 +213,11 @@ FIERY_PAPERCUT_MAP = {
    
 def job_fiery_to_papercut(fy_job, pc_account_name):
     """Convert a Fiery job to a PaperCut job
-    
+
         fy_job: Fiery job as a dict
         pc_account_name: PaperCut account name
         Returns: PaperCut job corresponding to fy_job
-        
+
         TODO: Check this conversion with Fiery team
     """    
     pc_job = dict((k, FIERY_PAPERCUT_MAP[k](fy_job)) for k in FIERY_PAPERCUT_MAP) 
@@ -229,7 +251,6 @@ def get_new_jobs(old_pc_jobs, pc_jobs):
                 new_jobs[id] = new_job
     return new_jobs            
 
-    
 #
 # Command line processing
 #    
