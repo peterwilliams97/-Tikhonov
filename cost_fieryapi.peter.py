@@ -1,27 +1,30 @@
 # -*- coding: utf-8 -*-
 """
-    Script to test Fiery cost accounting API working with PaperCut
-    
-    Assumes access to a Fiery and a PaperCut server
-    
+    Script to test Fiery cost accounting API working with PaperCut.
+
+    Assumes access to a Fiery and a PaperCut server.
+
     PaperCut Setup
     --------------
-    A PaperCut server can setup in a few minutes by downloading the trial
+    A PaperCut server can be setup in a few minutes by downloading the trial
     version from http://www.papercut.com/ . 
-    
-    If you do this then please  set the admin password to "password" or 
+
+    If you do this then please set the admin password to "password" or 
     change DEFAULT_PAPERCUT_PWD to the PaperCut admin password.
-    
+
     Viewing Fiery jobs in PaperCut
     -------------------------------
     The easiest way to view the Fiery jobs on PaperCut is with a web browser.
-    
+
         Go to http://<papercut server address>:9191/app?service=page/AccountList
             (e.g. http://localhost:9191/app?service=page/AccountList if the server is 
             running on your computer)
         Click on the Fiery-account link  
-        Click on the Job Log tab    
- 
+        Click on the Job Log tab   
+
+        There is more information and screen shots for this in  
+        https://docs.google.com/a/papercut.com/document/d/1fj4v6kFj5GHI_pbHiO1sie_bysQZw5z6jv15YW_5fCg
+
 
     DEFAULT_* contain all default states
     Update DEFAULT_* to reflect your environment or vice-versa
@@ -30,6 +33,7 @@
         Handle multiple Fierys
         Scan through all jobs on Fiery (see fy_reqStart, fy_reqCount) 
         Enable page level color detection for Fiery printer
+        Remove exit()s in production code
 """
 from __future__ import division
 
@@ -62,7 +66,7 @@ def load_object(path, default=None):
         return pickle.load(open(path, 'rb'))
     except:
         return default  
-        
+
 
 #
 # Fiery code
@@ -186,7 +190,7 @@ def papercut_log_jobs(server, auth_token, pc_jobs):
         pc_jobs: dict of jobs to record in PaperCut job log (in PaperCut format)
     """
     for job in pc_jobs.values():
-        # PaperCut doesn't log non-printing print  jobs
+        # PaperCut doesn't log non-printing print jobs
         if job['total-pages'] <= 0:
             continue
         # See http://www.papercut.com/products/ng/manual/ "Importing Print Job Details"    
@@ -293,7 +297,7 @@ options,args = parser.parse_args()
 
 # 
 # We can't check command line params as they are optional (i.e. args is empty) 
-# so we just print them stdout
+# so we just print them to stdout.
 #  
 print('-' * 80)
 print(__doc__)
@@ -302,12 +306,11 @@ print('-' * 80)
 print('Options')    
 pprint(options.__dict__)
 print('-' * 80)
-   
 
 # Initialize Fiery connection    
 fy_url,fy_session_cookie = fiery_login(options.fiery_ip, options.fiery_user, 
         options.fiery_pwd, options.verbose) 
-        
+
 # Initialize PaperCut        
 pc_auth_token = options.papercut_pwd
 pc_account = options.papercut_account
@@ -325,9 +328,8 @@ old_pc_jobs = load_object('fiery.papercut.old.jobs', {})
 #   If there are any new jobs   
 #       Log new jobs
 #       Update list record of jobs already logged
-#
 while True:  
-      
+
     print('-' * 80)  
     # Fetch Fiery jobs
     fy_jobs = fiery_fetch_jobs(fy_url, fy_session_cookie, options.verbose)
@@ -338,10 +340,10 @@ while True:
     # Convert Fiery jobs to PaperCut format
     pc_jobs = dict((job['id'],job_fiery_to_papercut(job, pc_account)) for job in fy_jobs)
     
-    # Look for new jobs
+    # Find out which of the Fiery jobs are new
     new_pc_jobs = get_new_jobs(old_pc_jobs, pc_jobs)
     if new_pc_jobs:
-        # Log new jobs on Fiery 
+        # Log new Fiery jobs on PaperCut 
         print('%d new jobs' % len(new_pc_jobs))
         if options.verbose:
             print(new_pc_jobs) 
@@ -350,8 +352,7 @@ while True:
         # Update record of jobs already logged
         old_pc_jobs = pc_jobs
         save_object('fiery.papercut.old.jobs', old_pc_jobs)   
-            
-    
+
     if options.verbose:
         print('Sleeping %d sec' % options.sleep_secs)
     time.sleep(options.sleep_secs)
