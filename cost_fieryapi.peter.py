@@ -75,25 +75,20 @@ def load_object(path, default=None):
 fy_reqStart = 0
 fy_reqCount = 100
 
-# Login
-FIERY_API_KEY = \
-'Bqa3GPwei+NU9z79dZskruGgJHQK53CJvXXsnaKNcy13ji9ol7Dpl0UmkUYr' \
-'n7a9bP3OAtvSUpAnh1LRzi5oGXMFZVWkzsIAvD9cApALEugQOEd8a4QTSUrX' \
-'01GYIEA1V3tnZ8+hfeBjTvaF7ie3FzmVec3RsIFknWaK0UeztY8sjWTi9hnK' \
-'5+XxBQ6mE3Zkgaz4q4b2aeNDiJitvUuhy1Pxbs0HVx8FBlbvB59CTURUIWpT' \
-'fZPvsiDhG+mBy8GyAUEfIcuLa1Ua/z5bIIMzrJZzvaMp97ufNjImcY8VsHvE' \
-'aVtwW6bfaaihOphoCtk35EodSHGIbTNPmJJfws3L4K1u/J6koc7vlV7iAVtH' \
-'PNn6m86bg37plf2RpAuHFOEZiLDa4XkkpdjHU/ZUK88tOt57zn/WU0csfFNb' \
-'sRlrSJUDLiFWufb8m62r2D9b75/XDZKS8bAthJ0vV6y/DW7uulJ8h5q3iSrJ' \
-'l9eIm2ORGRAhATqph2kbSV86FmknW6ZO'
+def fiery_load_api_key(key_file):   
+    try:   
+        return open(key_file, 'rb').read()
+    except Exception, e:
+        print('Could not load Fiery API key from %s: %s' % (key_file, e))
+        return None
 
 
-def fiery_login(fiery, username='admin', password='Fiery.color', verbose=False): 
-    
+def fiery_login(api_key, fiery, username, password, verbose=False): 
+       
     auth = {
         'username': username, 
         'password': password,
-        'accessrights': {'a1': FIERY_API_KEY}
+        'accessrights': {'a1': api_key}
     }
     if verbose:
         print json.dumps(auth)
@@ -258,7 +253,7 @@ def get_new_jobs(old_pc_jobs, pc_jobs):
 #
 # Command line processing
 #    
-    
+DEFAULT_FIERY_API_KEY_FILE = 'fiery.api.key'   
 DEFAULT_FIERY_IP = '192.68.228.104'   
 DEFAULT_FIERY_USER = 'admin' 
 DEFAULT_FIERY_PWD = 'Fiery.color' 
@@ -270,7 +265,9 @@ DEFAULT_PAPERCUT_ACCOUNT = 'Fiery-account'
 
 DEFAULT_SLEEP_SECS = 60
 
-parser = optparse.OptionParser('python ' + sys.argv[0] + ' [options]')
+parser = optparse.OptionParser('python %s [options]' % sys.argv[0])
+parser.add_option('-K', '--fiery-api-key', dest='fiery_api_key_file', default=DEFAULT_FIERY_API_KEY_FILE, 
+        help='Path of Fiery API key file')
 parser.add_option('-S', '--fiery-ip', dest='fiery_ip', default=DEFAULT_FIERY_IP, 
         help='Network name or IP address of Fiery to monitor')
 parser.add_option('-U', '--fiery-user', dest='fiery_user', default=DEFAULT_FIERY_USER, 
@@ -307,9 +304,14 @@ print('Options')
 pprint(options.__dict__)
 print('-' * 80)
 
-# Initialize Fiery connection    
-fy_url,fy_session_cookie = fiery_login(options.fiery_ip, options.fiery_user, 
-        options.fiery_pwd, options.verbose) 
+# Initialize Fiery connection  
+fy_api_key = fiery_load_api_key(options.fiery_api_key_file)
+if not fy_api_key:
+    exit()
+print(options.fiery_api_key_file)
+print('Fiert API Key=%s' % fy_api_key) 
+fy_url,fy_session_cookie = fiery_login(fy_api_key, options.fiery_ip, 
+        options.fiery_user, options.fiery_pwd, options.verbose) 
 
 # Initialize PaperCut        
 pc_auth_token = options.papercut_pwd
