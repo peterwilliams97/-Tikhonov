@@ -11,6 +11,8 @@
 
     If you do this then please set the admin password to "password" or 
     change DEFAULT_PAPERCUT_PWD to the PaperCut admin password.
+    
+    You should run this script on the computer the PaperCut server is running on.
 
     Viewing Fiery jobs in PaperCut
     -------------------------------
@@ -35,7 +37,7 @@
         Scan through all jobs on Fiery (see fy_reqStart, fy_reqCount) 
         Enable page level color detection for Fiery printer
         Remove exit()s in production code
-        Add other job attributes
+        Add other more Fiery job attributes to PaperCut jobs
 """
 from __future__ import division
 
@@ -55,8 +57,9 @@ import cPickle as pickle
 
 PRETTY_PRINTER =  pprint.PrettyPrinter(indent=4)
 
-def pprint(s):
-    PRETTY_PRINTER.pprint(s)
+def pprint(obj):
+    """Pretty print object obj"""
+    PRETTY_PRINTER.pprint(obj)
 
 def save_object(path, obj):
     """Save obj to path"""
