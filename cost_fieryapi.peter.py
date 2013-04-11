@@ -31,9 +31,11 @@
 
     TODO:
         Handle multiple Fierys
+        Figure out how to request only jobs printed on Fiery since last request
         Scan through all jobs on Fiery (see fy_reqStart, fy_reqCount) 
         Enable page level color detection for Fiery printer
         Remove exit()s in production code
+        Add other job attributes
 """
 from __future__ import division
 
@@ -84,7 +86,7 @@ def fiery_load_api_key(key_file):
 
 
 def fiery_login(api_key, fiery, username, password, verbose=False): 
-       
+
     auth = {
         'username': username, 
         'password': password,
@@ -96,7 +98,7 @@ def fiery_login(api_key, fiery, username, password, verbose=False):
     if not fiery:
         print('error: no server specified')
         exit(2)
-    
+
     if verbose:
         print('connecting to ' + fiery + '...')
 
@@ -126,7 +128,7 @@ def fiery_login(api_key, fiery, username, password, verbose=False):
     sessionCookie = m.group(1)
     if verbose:
         print('sessionCookie=%s' % sessionCookie)
-        
+
     return url, sessionCookie    
 
 def fiery_fetch_jobs(url, sessionCookie, verbose=False): 
@@ -309,7 +311,7 @@ fy_api_key = fiery_load_api_key(options.fiery_api_key_file)
 if not fy_api_key:
     exit()
 print(options.fiery_api_key_file)
-print('Fiert API Key=%s' % fy_api_key) 
+print('Fiery API Key="%s"' % fy_api_key) 
 fy_url,fy_session_cookie = fiery_login(fy_api_key, options.fiery_ip, 
         options.fiery_user, options.fiery_pwd, options.verbose) 
 
