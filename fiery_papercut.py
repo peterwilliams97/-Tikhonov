@@ -38,6 +38,7 @@
         Enable page level color detection for Fiery printer
         Remove exit()s in production code
         Add other more Fiery job attributes to PaperCut jobs
+        Fix PaperCut server\printer name for Fierys
 """
 from __future__ import division
 
@@ -81,6 +82,7 @@ fy_reqStart = 0
 fy_reqCount = 100
 
 def fiery_load_api_key(key_file):   
+    """Load Fiery API key from key_file and return it."""
     try:   
         return open(key_file, 'rb').read()
     except Exception, e:
@@ -136,7 +138,7 @@ def fiery_login(api_key, fiery, username, password, verbose=False):
 
 def fiery_fetch_jobs(url, sessionCookie, verbose=False): 
 
-    # Request job log
+    # Request Fiery job log
     if verbose:
         print("retrieving...");
     headers = {'Cookie': '_session_id=%s;' % sessionCookie}
@@ -150,7 +152,7 @@ def fiery_fetch_jobs(url, sessionCookie, verbose=False):
     prnJobs = json.loads(r.text)
     if verbose:
         print(str(len(prnJobs)) + ' entries retrieved')
-    
+
     return prnJobs
 
 #
@@ -159,7 +161,7 @@ def fiery_fetch_jobs(url, sessionCookie, verbose=False):
 
 def papercut_init(host_name, port, auth_token, account_name):
     """Standard PaperCut XMLRPC initialization
-        Instantiate a server and create the accout if it doesn't 
+        Instantiate a server and create a shared account if it doesn't 
         already exist.
         
         host_name: Network name/IP address of PaperCut server
@@ -169,7 +171,7 @@ def papercut_init(host_name, port, auth_token, account_name):
         Returns: Instantiated XMLRPC server
     """
 
-    print('Connecting to papercut host %s:%d' % (host_name, port))
+    print('Connecting to PaperCut host %s:%d' % (host_name, port))
 
     server = xmlrpclib.Server('http://%s:%d/rpc/api/xmlrpc' % (host_name, port))
 
@@ -222,7 +224,9 @@ def job_fiery_to_papercut(fy_job, pc_account_name):
         pc_account_name: PaperCut account name
         Returns: PaperCut job corresponding to fy_job
 
-        TODO: Check this conversion with Fiery team
+        TODO: 
+            Check this conversion with Fiery team
+            Add remaining attributes
     """    
     pc_job = dict((k, FIERY_PAPERCUT_MAP[k](fy_job)) for k in FIERY_PAPERCUT_MAP) 
     pc_job['shared-account'] = pc_account_name
@@ -238,8 +242,11 @@ def get_new_jobs(old_pc_jobs, pc_jobs):
         Returns: dict of jobs that are printed on Fiery but not yet recorded in PaperCut
         (All params and return are dicts of jobs in PaperCut format)
         
-        TODO: Check that this correclty reflects Fiery jobs with 
-            Fiery team
+        TODO: 
+            Check that this correctly reflects Fiery jobs with 
+             Fiery team.
+            Find out if there is a way of querying Fiery to return
+             only jobs printed since previous query.
     """
     old_keys = set(old_pc_jobs.keys()) 
     new_jobs = {}
