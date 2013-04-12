@@ -73,7 +73,7 @@ def load_object(path, default=None):
 def first_non_empty(iterable):
     """Return first non-empty element in iterable"""
     return next(s for s in iterable if s)   
-    
+
 #
 # Fiery code
 #        
@@ -355,12 +355,10 @@ fy_count = options.fiery_batch_size
 print('=' * 80)    
 
 # Main loop
-#   Poll Fiery for list of printed jobs
-#   Convert jobs to PaperCut format
-#   Compare to record of jobs already logged in PaperCut
+#   Poll Fiery for list jobs printed since the last time we polled
 #   If there are any new jobs   
-#       Log new jobs
-#       Update list record of jobs already logged
+#       Log new job in PaperCut
+#       Update id of last job fetched from Fiery
 while True:  
  
     # Fetch Fiery jobs
