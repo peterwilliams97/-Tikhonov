@@ -59,16 +59,6 @@ def pprint(obj):
     """Pretty print object obj"""
     PRETTY_PRINTER.pprint(obj)
 
-def save_object(path, obj):
-    """Save obj to path"""
-    pickle.dump(obj, open(path, 'wb'))    
-    
-def load_object(path, default=None):
-    """Load object from path"""
-    try:
-        return pickle.load(open(path, 'rb'))
-    except:
-        return default  
 
 def first_non_empty(iterable):
     """Return first non-empty element in iterable"""
@@ -198,7 +188,31 @@ def papercut_log_jobs(server, auth_token, pc_jobs):
         print('Recording job="%s"' % job_details)
         server.api.processJob(auth_token, job_details)    
 
+# PaperCut config key format used for storing Fiery start ids        
+CONFIG_FMT = 'fiery-start-id:%s'
 
+def papercut_save_fiery_id(server, auth_token, fiery_ip, id):  
+    """Save Fiery start id in PaperCut config
+        
+        server: PaperCut XMLRPC server instance
+        auth_token: Authorization token or password
+        fiery_ip: IP adddress/netword name of Fiery for which start id is being saved
+        id: Start id
+    """
+
+    server.api.setConfigValue(auth_token, CONFIG_FMT % fiery_ip, str(id))  
+
+def papercut_load_fiery_id(server, auth_token, fiery_ip):  
+    """Load Fiery start id from PaperCut config
+        
+        server: PaperCut XMLRPC server instance
+        auth_token: Authorization token or password
+        fiery_ip: IP adddress/netword name of Fiery for which start id is being saved
+        Returns: Start id for fiery_ip
+    """
+    val = server.api.getConfigValue(auth_token, CONFIG_FMT % fiery_ip)
+    return int(val) if val else 0
+        
 #
 # Job conversion/manipulation code
 #
@@ -230,7 +244,10 @@ def convert_time(fy_time):
         print('convert_time: Invalid fy_time="%s": e' % (fy_time, e))
         return '1111-11-11T11:11:11'
 
-  
+        
+# TODO: Replace job[key] with job.get(key,None) to make FIERY_PAPERCUT_MAP
+#      resilient against missing Fiery keys
+
 FIERY_PAPERCUT_MAP = {
     'printer': lambda job: job['fiery'],
     'user': lambda job: first_non_empty([job.get('username', None), 
@@ -343,12 +360,10 @@ pc_server = papercut_init(options.papercut_ip, options.papercut_port,
         pc_auth_token, options.papercut_account)   
 
 # Load record of Fiery jobs already logged on PaperCut
-# TODO: Store this in PaperCut in some way  
-fy_history = {} if options.ignore_history else load_object('fiery.start.ids', {}) 
-    
-if options.verbose:
-    print('Latest job ids from previous session: %s' % fy_history) 
-fy_start_id = fy_history.get(options.fiery_ip, 0)   
+  
+fy_start_id = papercut_load_fiery_id(pc_server, pc_auth_token, options.fiery_ip)  
+if options.ignore_history:
+    fy_start_id = 0
 
 fy_count = options.fiery_batch_size   
 
@@ -382,8 +397,7 @@ while True:
         assert max_id >= fy_start_id, 'Highest job id=%d < start id=%d' % (max_id, fy_start_id)
 
         fy_start_id = max_id + 1
-        fy_history[options.fiery_ip] = fy_start_id   
-        save_object('fiery.start.ids', fy_history)   
+        papercut_save_fiery_id(pc_server, pc_auth_token, options.fiery_ip, fy_start_id)   
 
     if options.verbose:
         print('Sleeping %d sec' % options.sleep_secs)
