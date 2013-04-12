@@ -195,7 +195,7 @@ def papercut_log_jobs(server, auth_token, pc_jobs):
             continue
         # See http://www.papercut.com/products/ng/manual/ "Importing Print Job Details"    
         job_details = ','.join('%s=%s' % (k,v) for k,v in job.items())
-        print job_details
+        print('Recording job="%s"' % job_details)
         server.api.processJob(auth_token, job_details)    
 
 
@@ -230,7 +230,6 @@ def convert_time(fy_time):
         print('convert_time: Invalid fy_time="%s": e' % (fy_time, e))
         return '1111-11-11T11:11:11'
 
-
   
 FIERY_PAPERCUT_MAP = {
     'printer': lambda job: job['fiery'],
@@ -261,7 +260,7 @@ def convert_job(fy_job, pc_server, pc_account_name):
     pc_job = dict((k, FIERY_PAPERCUT_MAP[k](fy_job)) for k in FIERY_PAPERCUT_MAP) 
     pc_job['server'] = pc_server
     pc_job['shared-account'] = pc_account_name
-    pc_job['grayscale'] = 'TRUE' if  pc_job['total-color-pages'] else 'FALSE'
+    pc_job['grayscale'] = 'TRUE' if pc_job['total-color-pages'] > 0 else 'FALSE'
     return pc_job 
 
 
@@ -329,9 +328,10 @@ fy_api_key = fiery_load_api_key(options.fiery_api_key_file)
 if not fy_api_key:
     exit()
 
-#if options.verbose:
-#    print(options.fiery_api_key_file)   
-#    print('Fiery API Key="%s"' % fy_api_key) 
+if options.verbose:
+    print(options.fiery_api_key_file)   
+    print('Fiery API Key="%s"' % fy_api_key) 
+    
 fy_url,fy_session_cookie = fiery_login(fy_api_key, options.fiery_ip, 
         options.fiery_user, options.fiery_pwd, options.verbose) 
 
@@ -344,21 +344,21 @@ pc_server = papercut_init(options.papercut_ip, options.papercut_port,
 
 # Load record of Fiery jobs already logged on PaperCut
 # TODO: Store this in PaperCut in some way  
-fy_last_ids = {} if options.ignore_history else load_object('fiery.last.ids', {}) 
+fy_history = {} if options.ignore_history else load_object('fiery.start.ids', {}) 
     
 if options.verbose:
-    print('Latest job ids from previous session: %s' % fy_last_ids) 
-fy_start_id = fy_last_ids.get(options.fiery_ip, 0)   
+    print('Latest job ids from previous session: %s' % fy_history) 
+fy_start_id = fy_history.get(options.fiery_ip, 0)   
 
 fy_count = options.fiery_batch_size   
 
 print('=' * 80)    
 
 # Main loop
-#   Poll Fiery for list jobs printed since the last time we polled
+#   Poll Fiery for list of jobs printed since the last time we polled
 #   If there are any new jobs   
 #       Log new job in PaperCut
-#       Update id of last job fetched from Fiery
+#       Update id of latest job fetched from Fiery
 while True:  
  
     # Fetch Fiery jobs
@@ -374,16 +374,16 @@ while True:
         if options.verbose:
             print(pc_jobs) 
 
-        # Log latest Fiery on PaperCut
+        # Log Fiery jobs on PaperCut
         papercut_log_jobs(pc_server, pc_auth_token, pc_jobs) 
 
-        # Update record of jobs already logged
+        # Update start id for next Fiery poll
         max_id = max(pc_jobs.keys())
         assert max_id >= fy_start_id, 'Highest job id=%d < start id=%d' % (max_id, fy_start_id)
 
         fy_start_id = max_id + 1
-        fy_last_ids[options.fiery_ip] = fy_start_id   
-        save_object('fiery.last.ids', fy_last_ids)   
+        fy_history[options.fiery_ip] = fy_start_id   
+        save_object('fiery.start.ids', fy_history)   
 
     if options.verbose:
         print('Sleeping %d sec' % options.sleep_secs)
