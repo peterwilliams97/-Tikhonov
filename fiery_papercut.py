@@ -33,7 +33,6 @@
 
     TODO:
         Handle multiple Fierys
-        Scan through all jobs on Fiery (see fy_reqStart, fy_reqCount) 
         Enable page level color detection for Fiery printer
         Remove exit()s in production code
 """
@@ -78,9 +77,6 @@ def first_non_empty(iterable):
 #
 # Fiery code
 #        
-        
-fy_reqStart = 0
-fy_reqCount = 100
 
 def fiery_load_api_key(key_file):   
     try:   
