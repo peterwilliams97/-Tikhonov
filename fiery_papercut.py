@@ -217,12 +217,13 @@ def papercut_load_fiery_id(server, auth_token, fiery_ip):
 # Job conversion/manipulation code
 #
 def convert_boolean(fy_bool_str):
-    if fy_bool_str:
-        if fy_bool_str[0].lower() == 'y':
-            return 'TRUE'
-        if fy_bool_str[0].lower() == 'n':
-            return 'FALSE'
-    return '???'  
+    """Convert a Fiery boolean string to a PaperCut boolean string
+        Fiery is Yes/No
+        PaperCut is TRUE/FALSE
+    """
+    first = fy_bool_str[0].lower() if fy_bool_str else None
+    return 'TRUE' if first == 'y' else 'FALSE'
+
     
 def convert_time(fy_time):
     """Convert a Fiery date-time to a PaperCut date-time
@@ -242,7 +243,7 @@ def convert_time(fy_time):
         return dt.isoformat().replace(':', '').replace('-', '')
     except e:
         print('convert_time: Invalid fy_time="%s": e' % (fy_time, e))
-        return '1111-11-11T11:11:11'
+        return '11111111T111111'
 
         
 # TODO: Replace job[key] with job.get(key,None) to make FIERY_PAPERCUT_MAP
