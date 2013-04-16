@@ -32,7 +32,8 @@
     Update DEFAULT_* to reflect your environment or vice-versa
 
     TODO:
-        Handle multiple Fierys
+        Handle multiple Fierys (input is tab delimited file)
+        Transaction for updating PaperCut
         Enable page level color detection for Fiery printer
         Remove exit()s in production code
 """
@@ -47,7 +48,7 @@ import time
 import datetime
 import xmlrpclib
 import pprint
-import cPickle as pickle
+
 
 #
 # Utility functions
@@ -123,6 +124,7 @@ def fiery_login(api_key, fiery, username, password, verbose=False):
         print('sessionCookie=%s' % sessionCookie)
 
     return url, sessionCookie    
+    
 
 def fiery_fetch_jobs(url, sessionCookie, start_id, count, verbose=False): 
 
@@ -171,6 +173,7 @@ def papercut_init(host_name, port, auth_token, account_name):
         server.api.addNewSharedAccount(auth_token, account_name)
 
     return server    
+    
 
 def papercut_log_jobs(server, auth_token, pc_jobs):
     """Record Fiery jobs in PaperCut job log
@@ -201,6 +204,7 @@ def papercut_save_fiery_id(server, auth_token, fiery_ip, id):
     """
 
     server.api.setConfigValue(auth_token, CONFIG_FMT % fiery_ip, str(id))  
+    
 
 def papercut_load_fiery_id(server, auth_token, fiery_ip):  
     """Load Fiery start id from PaperCut config
@@ -212,6 +216,7 @@ def papercut_load_fiery_id(server, auth_token, fiery_ip):
     """
     val = server.api.getConfigValue(auth_token, CONFIG_FMT % fiery_ip)
     return int(val) if val else 0
+    
         
 #
 # Job conversion/manipulation code
