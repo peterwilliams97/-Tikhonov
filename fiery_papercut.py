@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-
     Script to test Fiery cost accounting API working with PaperCut.
 
     Assumes access to a Fiery and a PaperCut server.
@@ -32,10 +31,8 @@
     Update DEFAULT_* to reflect your environment or vice-versa
 
     TODO:
-        Handle multiple Fierys (input is tab delimited file)
-        Transaction for updating PaperCut
         Enable page level color detection for Fiery printer
-        Remove exit()s in production code
+
 """
 from __future__ import division
 
@@ -51,6 +48,13 @@ import pprint
 import logging
 import csv
 
+logging.basicConfig(
+    filename='papercut.fiery.log',
+    format='%(asctime)s %(levelname)s: %(message)s',
+    level=logging.INFO)
+    
+logging.info(' Starting '.join(['=' * 30] * 2))
+
 #
 # Utility functions
 #
@@ -61,19 +65,12 @@ def pprint(obj):
     """Pretty print object obj"""
     PRETTY_PRINTER.pprint(obj)
 
-logging.basicConfig(
-    filename='papercut.fiery.log',
-    format='%(asctime)s %(levelname)s: %(message)s',
-    level=logging.DEBUG)
-
-logging.info(' Starting '.join(['=' * 30] * 2))  
-
     
 def log_error(s):
     logging.error(s)
     print >> sys.stderr, s
 
-    
+
 def log_info(s):
     logging.info(s)
     pprint(s)
@@ -329,7 +326,7 @@ class PaperCut:
         pc_job['server'] = self.host_name
         pc_job['shared-account'] = self.account_name
         return pc_job
-        
+
     @staticmethod
     def validate_jobs(fiery, fiery_job_list):
         """Validate new job ids against those already stored on PaperCut
@@ -499,10 +496,10 @@ def process_command_line():
     DEFAULT_SLEEP_SECS = 60
 
     parser = optparse.OptionParser('python %s [options]' % sys.argv[0])
-    parser.add_option('-l', '--csv-load', dest='csv_load',  
+    parser.add_option('-L', '--csv-load', dest='csv_load',  
             default=None, 
             help='Load Fiery ip, username, pwd from csv file')
-    parser.add_option('-d', '--csv-dump', dest='csv_dump',  
+    parser.add_option('-D', '--csv-dump', dest='csv_dump',  
             default=None, 
             help='Dump Fiery ip, username, pwd to csv file')            
     parser.add_option('-B', '--fiery-batch-size', dest='fiery_batch_size', 
@@ -540,7 +537,10 @@ def process_command_line():
             help='Sleep time between successive Fiery polls')    
     parser.add_option('-i', '--ignore-history', action='store_true', dest='ignore_history', 
             default=False, 
-            help='Ignore history of Fiery jobs logged on PaperCut and log all jobs again.')        
+            help='Ignore history of Fiery jobs logged on PaperCut and log all jobs again.')
+    parser.add_option('-d', '--debug', action='store_true', dest='debug', 
+            default=False, 
+            help='Enable debug logging')        
 
    
     options,args = parser.parse_args()
@@ -564,6 +564,9 @@ def process_command_line():
 #    
 options,args = process_command_line()
 
+# Setup logging
+if options.debug:
+    logging.basicConfig(level=logging.DEBUG)
 
 # Initialize PaperCut        
 papercut = PaperCut(options.papercut_ip, options.papercut_port, options.papercut_pwd, 
