@@ -49,7 +49,7 @@ import datetime
 import xmlrpclib
 import pprint
 import logging
-
+import csv
 
 #
 # Utility functions
@@ -463,8 +463,9 @@ def load_fierys_csv(csv_path):
                     fiery_list = None
                     break
                 ip,username,password = row    
-                fiery = Fiery(ip=ip, username=username, password=password)
-    except e:
+                fiery_list.append(Fiery(ip=ip, username=username, password=password))
+                
+    except IOError, e:
         log_error('dump_fierys_csv: csv_path="%s" failed with %s' % (csv_path, e)) 
         return None
     return fiery_list  
@@ -475,7 +476,7 @@ def dump_fierys_csv(csv_path, fiery_list):
             writer = csv.writer(csv_file)
             for fiery in fiery_list:
                 writer.writerow([fiery.ip, fiery.username, fiery.password])
-    except e:
+    except IOError, e:
         log_error('dump_fierys_csv: csv_path="%s" failed with %s' % (csv_path, e)) 
         return False
     return True    
@@ -485,9 +486,9 @@ def process_command_line():
     # Command line processing
     #    
     DEFAULT_FIERY_API_KEY_FILE = 'fiery.api.key'   
-    DEFAULT_FIERY_IP = '192.68.228.104'   
-    DEFAULT_FIERY_USER = 'admin' 
-    DEFAULT_FIERY_PWD = 'Fiery.color' 
+    DEFAULT_FIERY_IP = None   # '192.68.228.104'   
+    DEFAULT_FIERY_USER = None # 'admin' 
+    DEFAULT_FIERY_PWD = None  # 'Fiery.color' 
     DEFAULT_FIERY_BATCH_SIZE = 1000 
 
     DEFAULT_PAPERCUT_IP = 'localhost'
