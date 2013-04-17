@@ -35,7 +35,6 @@
 
 """
 from __future__ import division
-
 import requests
 import json
 import re
@@ -65,7 +64,7 @@ def pprint(obj):
     """Pretty print object obj"""
     PRETTY_PRINTER.pprint(obj)
 
-    
+
 def log_error(s):
     logging.error(s)
     print >> sys.stderr, s
@@ -129,7 +128,7 @@ class Fiery:
         for k,v in fiery.__dict__.items():
             if v is not None:
                 self.__dict__[k] = v
-                
+
     def is_inconsistent(self):
         return self.pending_max_id is not None and (
                 self.max_id is None or self.pending_max_id > self.max_id)
@@ -211,16 +210,6 @@ class FieryConnection:
 
         # The list of printed jobs
         return json.loads(r.text)
-
-
-if False:
-    fiery = Fiery(123, 'peter', 'password')
-    s = repr(fiery)
-    print s
-    fiery2 = Fiery.from_string(s)
-    print fiery2
-    exit()
-    
 
 #
 # Job conversion/manipulation code
@@ -436,19 +425,6 @@ class PaperCut:
             self.save_fiery(fiery)
   
  
-if False: 
-    fiery = Fiery('123', 'peter', 'pwd')
-    print fiery.__dict__
-    papercut = PaperCut()
-    print papercut.__dict__
-    fiery2 = papercut.load_fiery('xxx')
-    print fiery2
-    fiery3 = papercut.update_fiery(fiery)
-    print fiery3
-    exit()     
-     
-     
-
 def load_fierys_csv(csv_path):
     fiery_list = []
     try: 
@@ -544,7 +520,7 @@ def process_command_line():
 
    
     options,args = parser.parse_args()
-    
+
     # 
     # We can't check command line params as they are optional (i.e. args is empty) 
     # so we just print them to stdout.
@@ -556,7 +532,7 @@ def process_command_line():
     log_info('Options')    
     log_info(options.__dict__)
     log_info('-' * 80)
-    
+
     return options,args
 
 #
@@ -593,7 +569,7 @@ if options.csv_load:
     if not fiery_list:
         log_error('Could not load Fierys from csv file="%s"' % options.csv_load)
         exit(3)    
-    
+
     # Update with any state stored for these Fierys on PaperCut
     for fiery in fiery_list:
         pc_fiery = papercut.load_fiery(fiery.ip)
@@ -601,7 +577,7 @@ if options.csv_load:
             log_error('Inconsistent Fiery state=%s' % pc_fiery) 
             exit(4)
         fiery.max_id = pc_fiery.max_id
-    
+
     # Save Fierys to PaperCut config       
     papercut.save_fiery_list(fiery_list)
 
