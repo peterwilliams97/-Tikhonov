@@ -107,14 +107,14 @@ class FieryState:
 
     def __repr__(self): 
         """Show the non-None values"""
-        return repr(dict((k,v) for k,v in self.__dict__.items() if v is not None)) 
+        return repr({k:v for k,v in self.__dict__.items() if v is not None}) 
 
     def repr_no_ip(self):
         """Convenience function for when ip is stored separately as in PaperCut config editor
             where the ip is stored in the key and repr_no_ip() is stored in the value
         """
         # TODO: Should we hide password?
-        dct = (dict((k,v) for k,v in self.__dict__.items() if v is not None))
+        dct = ({k:v for k,v in self.__dict__.items() if v is not None})
         if 'ip' in dct:
             del dct['ip']
         return repr(dct)    
@@ -298,7 +298,7 @@ def convert_job(fiery_job):
     """Convert a Fiery job to a PaperCut job
         TODO: Check this conversion with Fiery team
     """    
-    pc_job = dict((k, FIERY_PAPERCUT_MAP[k](fiery_job)) for k in FIERY_PAPERCUT_MAP) 
+    pc_job = {k:FIERY_PAPERCUT_MAP[k](fiery_job) for k in FIERY_PAPERCUT_MAP} 
     pc_job['grayscale'] = 'TRUE' if pc_job['total-color-pages'] > 0 else 'FALSE'
     return pc_job 
 
