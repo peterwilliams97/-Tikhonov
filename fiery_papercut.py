@@ -115,7 +115,7 @@ class FieryState:
             where the ip is stored in the key and repr_no_ip() is stored in the value
         """
         # TODO: Should we hide password?
-        dct = ({k:v for k,v in self.__dict__.items() if v is not None})
+        dct = {k:v for k,v in self.__dict__.items() if v is not None}
         if 'ip' in dct:
             del dct['ip']
         return repr(dct)    
