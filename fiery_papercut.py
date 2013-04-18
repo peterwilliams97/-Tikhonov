@@ -2,7 +2,7 @@
 """
     Script to track Fiery jobs on a PaperCut server.
 
-    This script should run on the PaperCut server.
+    This script should be run on the PaperCut server.
     
     Uses Fiery cost accounting API
 
@@ -10,9 +10,7 @@
     -------------------------------
     The easiest way to view the Fiery jobs on PaperCut is with a web browser.
 
-        Go to http://<papercut server address>:9191/app?service=page/AccountList
-            (e.g. http://localhost:9191/app?service=page/AccountList if the server is 
-            running on your computer)
+        Go to http://localhost:9191/app?service=page/AccountList 
         Click on the Fiery.account link  
         Click on the Job Log tab   
 """
@@ -53,7 +51,6 @@ EXIT_CANNOT_DUMP_CSV = 9
 #
 # Utility functions
 #
-
 PRETTY_PRINTER =  pprint.PrettyPrinter(indent=4)
 
 def pprint(obj):
@@ -116,6 +113,7 @@ class FieryState:
         """Convenience function for when ip is stored separately as in PaperCut config editor
             where the ip is stored in the key and repr_no_ip() is stored in the value
         """
+        # TODO: Should we hide password?
         dct = (dict((k,v) for k,v in self.__dict__.items() if v is not None))
         if 'ip' in dct:
             del dct['ip']
@@ -129,12 +127,15 @@ class FieryState:
         return fiery
 
     def is_inconsistent(self):
-        """A FieryState is consistent if there are no pending jobs that have not been recorded
-            A FieryState can be inconsistent if this script crashed while recoring Fiery jobs on
+        """A FieryState is consistent if there are no pending jobs that have not been recorded.
+            A FieryState can be inconsistent if this script crashed while recording Fiery jobs on
             a PaperCut server.
-            If this ever happens then the PaperCut server should be checked which Fiery jobs with
-            with ids with max_id > id >= pending_maxid have been recorded then the FieryState
-            should be updated
+            If this ever happens then 
+                - the PaperCut server should be checked to see which Fiery jobs with 
+                  id: max_id > id >= pending_max_id have been recorded. 
+                - the FieryState should be be updated to 
+                        max_id = highest id
+                        pending_max_id = None        
             The FieryState will be saved in the PaperCut config key given by PaperCut.config_key()
             which will be logged at ERROR level if this should ever happen. See log_inconsistent(). 
         """
@@ -311,7 +312,6 @@ class PaperCut:
             uid: UID that is used to claim control of recording Fiery jobs on host_name. 
                  Ensures that only one instance of this script is recording Fiery jobs in the
                  PaperCut Job Log at one time
-    
     """
 
     def __init__(self, host_name='localhost', port=9191, auth_token=None, account_name=None):
@@ -346,8 +346,7 @@ class PaperCut:
         self.connected = True     
 
     def convert_job(self, fiery_job):
-        """Convert a Fiery job to a PaperCut job and apply a server shared-accout name
-        """    
+        """Convert a Fiery job to a PaperCut job and apply server and shared-account names."""    
         pc_job = convert_job(fiery_job)
         pc_job['server'] = self.host_name
         pc_job['shared-account'] = self.account_name
@@ -355,8 +354,7 @@ class PaperCut:
 
     @staticmethod
     def validate_jobs(fiery, fiery_job_list):
-        """Validate new job ids against those already stored on PaperCut
-        """
+        """Validate new job ids against those already stored on PaperCut"""
         for job in fiery_job_list: 
             if fiery.max_id is not None and job['id'] <= fiery.max_id:
                 log_error('\n\t'.join([
@@ -455,7 +453,7 @@ class PaperCut:
 
     def load_fiery(self, fiery_ip):  
         """Load Fiery state from PaperCut config
-            fiery_ip: IP adddress/netword name of Fiery for which start id is being saved
+            fiery_ip: IP address/network name of Fiery for which start id is being saved
             Returns: Fiery state
             Always returns a dict with as much info as it can get from the PaperCut config.
         """
@@ -599,7 +597,6 @@ def process_command_line():
         This script can only reasonably be run on the PaperCut server it is communicating with
         so it does not make sense to change
             - papercut_ip
-
     """   
     DEFAULT_FIERY_API_KEY_FILE = 'fiery.api.key'   
     DEFAULT_FIERY_IP = None   # '192.68.228.104'   
@@ -674,7 +671,7 @@ def process_command_line():
 
     return options,args
 
-   
+
 def main():
     """Top level processing
     """
