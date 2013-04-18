@@ -1,18 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-    Script to track Fiery job in PaperCut.
+    Script to track Fiery jobs on a PaperCut server.
 
-    Assumes access to a Fiery and a PaperCut server.
+    This script should run on the PaperCut server.
     
     Uses Fiery cost accounting API
-
-    PaperCut Setup
-    --------------
-    A PaperCut server can be setup in a few minutes by downloading the trial
-    version from http://www.papercut.com/ . 
-
-    If you do this then please set the admin password to "password" or 
-    change DEFAULT_PAPERCUT_PWD to the PaperCut admin password.
 
     Viewing Fiery jobs in PaperCut
     -------------------------------
@@ -21,33 +13,42 @@
         Go to http://<papercut server address>:9191/app?service=page/AccountList
             (e.g. http://localhost:9191/app?service=page/AccountList if the server is 
             running on your computer)
-        Click on the Fiery-account link  
+        Click on the Fiery.account link  
         Click on the Job Log tab   
-
-        There is more information and screen shots for this in  
-        https://docs.google.com/a/papercut.com/document/d/1fj4v6kFj5GHI_pbHiO1sie_bysQZw5z6jv15YW_5fCg
-
-    Notes:
-    ------
-    DEFAULT_* contain all default states
-    Update DEFAULT_* to reflect your environment or vice-versa
-
-    TODO:
-        Enable page level color detection for Fiery printers
-
 """
+#
+# TODO:
+#       Enable page level color detection for Fiery printers
+#       Mask passwords stored in PaperCut config editor
+#
 from __future__ import division
-import requests
-import json
-import re
-import sys
-import optparse
-import time
-import datetime
-import xmlrpclib
-import pprint
-import logging
 import csv
+import datetime
+import json
+import logging
+import optparse
+import os
+import pprint
+import re
+import requests
+import sys
+import time
+import xmlrpclib
+
+
+#
+# Exit codes
+#
+EXIT_SUCCESS = 0
+EXIT_BAD_ARG = 1
+EXIT_NO_FIERY_API_KEY = 2  
+EXIT_NO_FIERYS = 3
+EXIT_CANNOT_CONNECT_PAPERCUT = 4
+EXIT_MULTIPLE_INSTANCE = 5
+EXIT_INCONSISTENT = 6
+EXIT_INVALID_JOB_LIST = 7
+EXIT_CANNOT_LOAD_CSV = 8
+EXIT_CANNOT_DUMP_CSV = 9
 
 #
 # Utility functions
@@ -57,7 +58,10 @@ PRETTY_PRINTER =  pprint.PrettyPrinter(indent=4)
 
 def pprint(obj):
     """Pretty print object obj"""
-    PRETTY_PRINTER.pprint(obj)
+    if isinstance(obj, str):
+        print obj
+    else:
+        PRETTY_PRINTER.pprint(obj)
 
 
 def log_error(s):
@@ -89,7 +93,7 @@ def get_uid():
 class FieryState:
     """Stores a Fiery's login info and the state of the number of jobs that have been read from it
         and recorded on a PaperCut server.
-            ip: Fierye network name or ip addres
+            ip: Fiery network name or ip address
             username: Username for Fiery login
             password: Password for Fiery login
             max_id: Highest job id from this Fiery recorded on PaperCut
@@ -97,8 +101,7 @@ class FieryState:
     """
 
     def __init__(self, ip=None, username=None, password=None, max_id=None, pending_max_id=None):
-        """All params optional to simplify construction from a dict as in from_dict()
-        """
+        """All key word args to simplify construction from a dict as in from_dict()"""
         self.ip = ip
         self.username = username
         self.password = password
@@ -106,6 +109,7 @@ class FieryState:
         self.pending_max_id = pending_max_id
 
     def __repr__(self): 
+        """Show the non-None values"""
         return repr(dict((k,v) for k,v in self.__dict__.items() if v is not None)) 
 
     def repr_no_ip(self):
@@ -148,8 +152,16 @@ def fiery_load_api_key(key_file):
 
 
 class FieryConnection:
+    """Connnection to a Fiery
+            fiery: FieryState of Fiery connected to
+            url: URL of Fiery
+            session_cookie: Session cookie for connection
+            connected: True if successfully connected
+            failure: String containing failure message if there was a failuree
+    """
+    # TODO: Add retry in case where connection are dropped?
 
-    count = 0
+    batch_size = 100
 
     @staticmethod
     def set_api_key(api_key):
@@ -157,6 +169,9 @@ class FieryConnection:
         
     def __init__(self, fiery):
         self.fiery = fiery
+        self.url = None
+        self.session_cookie = None
+        self.session_cookie = None
         self.connected = False
         self.failure = None
         self.login()
@@ -212,7 +227,8 @@ class FieryConnection:
 
         # Request job log
         headers = {'Cookie': '_session_id=%s;' % self.session_cookie}
-        full_url = '%s/api/v1/cost?start_id=%d&count=%d' % (self.url, start_id, FieryConnection.count)
+        full_url = '%s/api/v1/cost?start_id=%d&count=%d' % (self.url, start_id, 
+                    FieryConnection.batch_size)
 
         log_debug('Retrieving Fiery jobs: url="%s"' % full_url)
 
@@ -224,7 +240,7 @@ class FieryConnection:
         # The list of printed jobs
         return json.loads(r.text)
 
-        
+
 #
 # Job conversion/manipulation code
 #
@@ -286,14 +302,19 @@ def convert_job(fiery_job):
 
 
 class PaperCut:
-
-    def __init__(self, host_name='localhost', port=9191, auth_token=None, account_name=None):
-        """ 
+    """For connecting with PaperCut server
             host_name: Network name/IP address of PaperCut server
             port: PaperCut server port to use
             auth_token: Authorization token or password
             account_name: Name of PaperCut Shared Account to be used to store Fiery jobs
-        """
+            connected: True if connected to a PaperCut server
+            uid: UID that is used to claim control of recording Fiery jobs on host_name. 
+                 Ensures that only one instance of this script is recording Fiery jobs in the
+                 PaperCut Job Log at one time
+    
+    """
+
+    def __init__(self, host_name='localhost', port=9191, auth_token=None, account_name=None):
         self.host_name = host_name
         self.port = port
         self.auth_token = auth_token
@@ -306,6 +327,7 @@ class PaperCut:
         """Standard PaperCut XMLRPC initialization
             Instantiate a server and create the accout if it doesn't 
             already exist.
+            Claims the PaperCut server
         """
 
         log_info('Connecting to PaperCut "%s:%d"' % (self.host_name, self.port))
@@ -335,28 +357,20 @@ class PaperCut:
     def validate_jobs(fiery, fiery_job_list):
         """Validate new job ids against those already stored on PaperCut
         """
-        if fiery.is_inconsistent():
-            log_inconsistent(fiery) 
-            return False 
-
         for job in fiery_job_list: 
-            if fiery.max_id is not None and job['id'] > fiery.max_id:
+            if fiery.max_id is not None and job['id'] <= fiery.max_id:
                 log_error('\n\t'.join([
                             'Fetched Fiery job id <= previous max id',
                             'job[id]=%s,fiery.max_id=%s', 
                             'job=%s',
                             'previous state=%s']) % (
                         job['id'], fiery.max_id, job, fiery))
-                return False
- 
-        return True    
+                exit(EXIT_INVALID_JOB_LIST)
 
     def _record_jobs_int(self, fiery_job_list):
-        """Record Fiery jobs in PaperCut job log
-
-            server: PaperCut XMLRPC server instance
-            auth_token: Authorization token or password
-            pc_jobs: dict of jobs to record in PaperCut job log (in PaperCut format)
+        """Record Fiery jobs in PaperCut Job Log
+            fiery_job_list: List of Fiery jobs
+            Should not be called directly. Use record_jobs()
         """
         for fiery_job in fiery_job_list:
             job = self.convert_job(fiery_job)
@@ -369,26 +383,43 @@ class PaperCut:
             self.server.api.processJob(self.auth_token, job_details)    
 
     def record_jobs(self, fiery, fiery_job_list):
+        """Record Fiery jobs in PaperCut Job Log
+            fiery_job_list: List of Fiery jobs
 
-        if not PaperCut.validate_jobs(fiery, fiery_job_list):
-            return False
+            Ensures that jobs are recorded in PaperCut Job Log reliably and that jobs are not
+            recorded twice.
 
+            If the PaperCut Config Editor values show that recording is in an inconsistent state
+            then this function will exit() with recording any Fiery jobs in the PaperCut Job Log.
+        """
+
+        # Check that Fiery is consistent
+        check_consistency(fiery)
+
+        # Check that new jobs are consistent with those already recorded
+        PaperCut.validate_jobs(fiery, fiery_job_list)
+
+        # Check that no other instance of this script is recording jobs on the PaperCut server
         self.check_claim()
 
-        max_id = max(job['id'] for job in fiery_jobs)
+        # Note in PaperCut Config Editor that we are in the process of recording Fiery jobs in the
+        # PaperCut Job Log
+        max_id = max(job['id'] for job in fiery_job_list)
         fiery.pending_max_id = max_id  
         self.save_fiery(fiery)
 
+        # Record the jobs in the PaperCut Job Log
         self._record_jobs_int(fiery_job_list)
 
+        # Note in PaperCut Config Editor that we are done recording Fiery jobs in the PaperCut Job 
+        # Log
         fiery.max_id = max_id
         fiery.pending_max_id = None
         self.save_fiery(fiery)
-
-        return True
  
     FIERY = 'Fiery'
     FIERY_LIST = '%s.list' % FIERY 
+    FIERY_ACCOUNT = '%s.account' % FIERY 
     FIERY_CLAIM = '%s.claim' % FIERY    
 
     @staticmethod
@@ -406,11 +437,14 @@ class PaperCut:
         """
         uid = self.server.api.getConfigValue(self.auth_token, PaperCut.FIERY_CLAIM)
         if uid != self.uid:
-            log_error('Another instance of this program is updating PaperCut server "%s" 
-                        % self.host_name)
+            log_error('''
+    Another instance of this script is updating PaperCut server "%s"
+    Only one instance of this script can be run at one time.
+    Quitting.'''
+                % self.host_name)
             # Tell the other instance to shutdown
             self.claim()                
-            exit(11)
+            exit(EXIT_MULTIPLE_INSTANCE)
 
     def save_fiery(self, fiery):  
         """Save Fiery state in PaperCut config."""
@@ -450,16 +484,63 @@ class PaperCut:
         self.save_fiery_ip_list(fiery_ip_list)
         for fiery in fiery_list:
             self.save_fiery(fiery)
-            
-    def current_status()        
+
+    def describe_state(this):
+        msg = \
+'''
+    The Fiery jobs tracked so far can be seen in the PaperCut web admin interface.
+    - Jobs are logged as print jobs in the Shared Account "%s"
+       Each job is stored with a comment that contains the Fiery id.
+    - The Fierys currently being tracked are in the PaperCut Config Editor
+        - Search for "%s" (without the quotes)
+        - Name "%s" has a list of IP addresses of Fierys being tracked.
+        - Each Fiery being tracked has an entry "%s" with a value that looks like
+          {'username': 'admin', 'password': 'secret', 'max_id': 4}
+            The username and password values (admin and secret in this example) are 
+            used to log in to the Fiery. max_id is the maximum Fiery job id for this 
+            Fiery recorded in the PaperCut Job Log.
+            NOTE: Sometimes you will see a value like  
+                {'username': 'admin', 'password': 'secret', 'max_id': 4, pending_max_id: 7}
+            This means that this script stopped while it was recording Fiery jobs 
+            with ids in the range 5-7 on PaperCut.
+            If you ever see this then you will need to 
+            - check which of the jobs in the range 5-7 have been recorded in the 
+              PaperCut Job Log. You can find this by sorting PaperCut Shared Account 
+              "%s" Job Log by  date and checking the comment of the latest job.              
+            - set max_id to the highest Fiery id
+            - delete the pending_max_id 
+            - e.g. if the highest Fiery id logged is 6 then you would set the above 
+                  value to {'username': 'admin', 'password': 'secret', 'max_id': 6}
+''' % ( this.account_name,
+        PaperCut.FIERY,
+        PaperCut.FIERY_LIST,
+        PaperCut.config_key('<IP>'),
+        this.account_name,)    
+
+        fiery_ip_list = this.load_fiery_ip_list()
+        fiery_list = this.load_fiery_list()
+
+        print
+        print 'Overview'
+        print msg
+        
+        if not fiery_ip_list and not fiery_list:
+            print 'There are no Fierys tracked in the PaperCut Config Editor'
+            return
+
+        print 'PaperCut Config Editor values'
+        print
+        print '    %s = %s' % (PaperCut.FIERY_LIST, fiery_ip_list)
+        for fiery in fiery_list:
+            print '    %s = %s' % (PaperCut.config_key(fiery.ip), fiery)        
   
 
 def log_inconsistent(fiery):
     log_error('Inconsistent Fiery state=%s in PaperCut config key=%s' 
-                % (fiery, PaperCut.config_key(fiery.ip))
+                % (fiery, PaperCut.config_key(fiery.ip)))
 
-                
-def check_consistency(fiery_list):   
+
+def check_consistency_list(fiery_list):   
     """Check that all Fiery states are consistent and exit if they are not"""   
     num_inconsistent = 0   
     for fiery in fiery_list:
@@ -467,17 +548,18 @@ def check_consistency(fiery_list):
             log_inconsistent(fiery)
             num_inconsistent += 1
     if num_inconsistent > 0:
-        exit(2)
-
- 
-def describe_papercut(papercut):
-    msg = \
-'''The Fiery jobs tracked so far can be seen in the PaperCut web admin interface
+        log_error('''
+    Please fix inconsistent Fiery recording state in PaperCut and restart this script.
+    Run this script with -v option to see how to fix the inconsistent state.
     
-''' FIERY = 'Fiery'
-    PFIERY_LIST = '%s.list' % FIERY 
-    FIERY_CLAIM = '%s.claim' % FIERY    
+Quitting ...
+''')
+        exit(EXIT_INCONSISTENT)
 
+        
+def check_consistency(fiery):   
+    """Check that Fiery states os consistent and exit if is are not"""   
+    check_consistency_list([fiery])     
  
 def load_fierys_csv(csv_path):
     """Load a list of Fiery ip, username, passwords from a CSV file"""
@@ -523,12 +605,12 @@ def process_command_line():
     DEFAULT_FIERY_IP = None   # '192.68.228.104'   
     DEFAULT_FIERY_USER = None # 'admin' 
     DEFAULT_FIERY_PWD = None  # 'Fiery.color' 
-    DEFAULT_FIERY_BATCH_SIZE = 1000 
+    DEFAULT_FIERY_BATCH_SIZE = 100 
 
     DEFAULT_PAPERCUT_IP = 'localhost'
     DEFAULT_PAPERCUT_PORT = 9191
     DEFAULT_PAPERCUT_PWD = 'password'
-    DEFAULT_PAPERCUT_ACCOUNT = 'Fiery-account'
+    DEFAULT_PAPERCUT_ACCOUNT = PaperCut.FIERY_ACCOUNT
 
     DEFAULT_SLEEP_SECS = 60
 
@@ -566,18 +648,15 @@ def process_command_line():
     parser.add_option('-a', '--papercut-account', dest='papercut_account', 
             default=DEFAULT_PAPERCUT_ACCOUNT, 
             help='Name of PaperCut shared account to log Fiery prints in')
-    parser.add_option('-v', '--verbose', action='store_true', dest='verbose', 
-            default=False, 
-            help='verbose output')     
     parser.add_option('-t', '--sleep-secs', dest='sleep_secs', type='int', 
             default=DEFAULT_SLEEP_SECS, 
             help='Sleep time between successive Fiery polls')    
-    parser.add_option('-i', '--ignore-history', action='store_true', dest='ignore_history', 
-            default=False, 
-            help='Ignore history of Fiery jobs logged on PaperCut and log all jobs again.')
     parser.add_option('-d', '--debug', action='store_true', dest='debug', 
             default=False, 
-            help='Enable debug logging')        
+            help='Enable debug logging')     
+    parser.add_option('-v', '--view', action='store_true', dest='view', 
+            default=False, 
+            help='View Fiery tracking on PaperCut server')                 
 
     options,args = parser.parse_args()
 
@@ -606,7 +685,7 @@ def main():
         level=logging.INFO)
         
     logging.info(' Starting '.join(['=' * 30] * 2))
-    
+
     options,args = process_command_line()
 
     if options.debug:
@@ -617,27 +696,29 @@ def main():
                         options.papercut_account)  
     if not papercut.connected:
         log_error('Could not connect to PaperCut: papercut=%s' % papercut) 
-        exit(1)
+        exit(EXIT_CANNOT_CONNECT_PAPERCUT)
+
+    if options.view:
+        papercut.describe_state()
+        exit(0)
 
     # Fetch the list of Fiery states stored on PaperCut  
     fiery_list = papercut.load_fiery_list()  
 
     # We will check consistency throughout this script
-    check_consistency(fiery_list)  
+    check_consistency_list(fiery_list)  
 
     if options.csv_load:
         # Load Fiery IPs, usernames and passwords from csv file
         fiery_list = load_fierys_csv(options.csv_load)
         if not fiery_list:
             log_error('Could not load Fierys from csv file="%s"' % options.csv_load)
-            exit(3)    
+            exit(EXIT_CANNOT_LOAD_CSV)    
 
         # Update with fiery_list any state stored for these Fierys on PaperCut
         for fiery in fiery_list:
             pc_fiery = papercut.load_fiery(fiery.ip)
-            if pc_fiery.is_inconsistent():
-                log_inconsistent(pc_fiery) 
-                exit(4)
+            check_consistency(pc_fiery)
             fiery.max_id = pc_fiery.max_id
 
         # Save Fierys to PaperCut config       
@@ -646,62 +727,54 @@ def main():
     if options.fiery_ip or options.fiery_user or options.fiery_pwd:
         if not (options.fiery_ip and options.fiery_user and options.fiery_pwd):
             log_error('If any of fiery_ip, fiery_user or fiery_pwd is specified then all must be')
-            exit(5)
+            exit(EXIT_BAD_ARG)
         if options.csv_load:
             log_error('If any of fiery_ip, fiery_user or fiery_pwd is specified then csv_load may not be')
-            exit(6)   
+            exit(EXIT_BAD_ARG)   
 
         fiery = FieryState(options.fiery_ip, options.fiery_user, options.fiery_pwd)
         pc_fiery = papercut.load_fiery(fiery.ip)
-        if pc_fiery.is_inconsistent():
-            log_inconsistent(pc_fiery)  
-            exit(7)
+        check_consistency(pc_fiery)
         fiery.max_id = pc_fiery.max_id
 
         fiery_list = [fiery]    
         
     # We will check consistency throughout this script
-    check_consistency(fiery_list)     
-
-    if options.csv_dump:
-        if not dump_fierys_csv(options.csv_dump, fiery_list):
-            exit(8)
+    check_consistency_list(fiery_list)    
 
     # Clean up the Fierys   
     for fiery in fiery_list:
         fiery.pending_max_id = None
-        assert fiery.ip, 'Invalid fiery=%s' % fiery    
+        assert fiery.ip, 'Invalid fiery=%s' % fiery     
+
+    if options.csv_dump:
+        if not dump_fierys_csv(options.csv_dump, fiery_list):
+            exit(EXIT_CANNOT_DUMP_CSV)
 
     # Check that we have at least one Fiery
 
     log_info('fiery_list=%s' % fiery_list)  
     if not fiery_list:
        log_error('No Fierys specified. Nothing to do')
-       exit(9)        
+       exit(EXIT_NO_FIERYS)        
 
     # We now have a valid Fiery list
     # So we save it to the PaperCut config
     papercut.save_fiery_list(fiery_list) 
-
-    # This is a debug option
-    # TODO: Remove
-    if options.ignore_history:  
-        for fiery in fiery_list:
-            fiery.max_id = None   
 
     #
     # Initialize connections to all Fierys in  fiery_list
     # 
     api_key = fiery_load_api_key(options.fiery_api_key_file)
     if not api_key:
-        exit()
-        
+        exit(EXIT_NO_FIERY_API_KEY)
+
     FieryConnection.set_api_key(api_key)    
-    FieryConnection.count = options.fiery_batch_size
+    FieryConnection.batch_size = options.fiery_batch_size
 
     log_debug('Fiery API Key file="%s"' % options.fiery_api_key_file)   
     log_debug('Fiery API Key="%s"' % api_key) 
-       
+
     attempted_connection_list = [FieryConnection(f) for f in fiery_list]
     fiery_connection_list = [f for f in attempted_connection_list if f.connected]
     failed_connection_list = [f for f in attempted_connection_list if not f.connected]
@@ -714,7 +787,6 @@ def main():
     if failed_connection_list:
         log_info('Failures=%s' % failed_connection_list)   
     log_debug('=' * 80)  
-
 
     #
     # We now have connections and valid Fiery states in PaperCut so we are ready to go
@@ -736,14 +808,14 @@ def main():
                 log_info('Fetched %d jobs from %s' % (len(fiery_jobs), fiery_connection.fiery.ip))
                 log_debug(fiery_jobs) 
 
-                if not papercut.record_jobs(fiery_connection.fiery, fiery_jobs):
-                    exit(10)
+                papercut.record_jobs(fiery_connection.fiery, fiery_jobs)
 
         log_debug('Sleeping %d sec' % options.sleep_secs)
         log_debug('-' * 80)  
         time.sleep(options.sleep_secs)
+        papercut.check_claim()
 
-        
+
 #
 # Execution starts here
 #    
