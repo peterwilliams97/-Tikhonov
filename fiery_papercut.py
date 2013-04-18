@@ -18,7 +18,8 @@
 # TODO:
 #       Enable page level color detection for Fiery printers
 #       Mask passwords stored in PaperCut config editor
-#
+#       On first ever query just record max id, to avoid logging pre-history
+
 from __future__ import division
 import csv
 import datetime
@@ -326,9 +327,8 @@ class PaperCut:
 
     def connect(self):
         """Standard PaperCut XMLRPC initialization
-            Instantiate a server and create the accout if it doesn't 
-            already exist.
-            Claims the PaperCut server
+            - Instantiate a server and create the accout if it doesn't already exis.
+            - Claim the PaperCut server
         """
 
         log_info('Connecting to PaperCut "%s:%d"' % (self.host_name, self.port))
