@@ -239,7 +239,8 @@ class FieryConnection:
             return None
 
         # The list of printed jobs
-        return json.loads(r.text)
+        # Fierys seem to return these lists sorted by id. We re-sort to be sure.
+        return sorted(json.loads(r.text), key = lambda x: x['id'])
 
 
 #
@@ -353,7 +354,7 @@ class PaperCut:
         return pc_job
 
     @staticmethod
-    def validate_jobs(fiery, fiery_job_list):
+    def check_jobs(fiery, fiery_job_list):
         """Validate new job ids against those already stored on PaperCut"""
         for job in fiery_job_list: 
             if fiery.max_id is not None and job['id'] <= fiery.max_id:
@@ -391,11 +392,11 @@ class PaperCut:
             then this function will exit() with recording any Fiery jobs in the PaperCut Job Log.
         """
 
-        # Check that Fiery is consistent
+        # Check that Fiery state is consistent
         check_consistency(fiery)
 
         # Check that new jobs are consistent with those already recorded
-        PaperCut.validate_jobs(fiery, fiery_job_list)
+        PaperCut.check_jobs(fiery, fiery_job_list)
 
         # Check that no other instance of this script is recording jobs on the PaperCut server
         self.check_claim()
@@ -752,7 +753,7 @@ def main():
 
     log_info('fiery_list=%s' % fiery_list)  
     if not fiery_list:
-       log_error('No Fierys specified. Nothing to do')
+       log_error('No Fierys specified. Nothing to do.')
        exit(EXIT_NO_FIERYS)        
 
     # We now have a valid Fiery list
@@ -791,7 +792,7 @@ def main():
 
     #
     # Main loop
-    #   Poll alll Fierys for lists of jobs printed since the last time we polled
+    #   Poll all Fierys for lists of jobs printed since the last time we polled.
     #   If there are any new jobs   
     #       record new job in PaperCut
     #
@@ -817,4 +818,4 @@ def main():
 # Execution starts here
 #    
 main()
-        
+
