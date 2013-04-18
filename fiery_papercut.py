@@ -115,10 +115,7 @@ class FieryState:
             where the ip is stored in the key and repr_no_ip() is stored in the value
         """
         # TODO: Should we hide password?
-        dct = {k:v for k,v in self.__dict__.items() if v is not None}
-        if 'ip' in dct:
-            del dct['ip']
-        return repr(dct)    
+        return repr({k:v for k,v in self.__dict__.items() if v is not None and k != 'ip'})    
 
     @classmethod 
     def from_dict(cls, dct, ip=None):
@@ -258,6 +255,7 @@ def convert_boolean(fy_bool_str):
     
 def convert_time(fiery_time):
     """Convert a Fiery date-time to a PaperCut date-time
+
 
         fiery_time: Fiery date-time local time localized into Fiery's locale
             We assume all the Fierys that PaperCut is connnected to have the 
