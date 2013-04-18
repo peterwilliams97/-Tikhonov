@@ -697,7 +697,7 @@ def main():
 
     if options.view:
         papercut.describe_state()
-        exit(0)
+        exit(EXIT_SUCCESS)
 
     # Fetch the list of Fiery states stored on PaperCut  
     fiery_list = papercut.load_fiery_list()  
