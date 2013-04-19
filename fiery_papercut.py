@@ -512,7 +512,7 @@ class PaperCut:
         PaperCut.FIERY,
         PaperCut.FIERY_LIST,
         PaperCut.config_key('<IP>'),
-        this.account_name,)    
+        this.account_name)    
 
         fiery_ip_list = this.load_fiery_ip_list()
         fiery_list = this.load_fiery_list()
@@ -553,10 +553,11 @@ Quitting ...
 ''')
         exit(EXIT_INCONSISTENT)
 
-        
+
 def check_consistency(fiery):   
     """Check that Fiery states os consistent and exit if is are not"""   
-    check_consistency_list([fiery])     
+    check_consistency_list([fiery])   
+
  
 def load_fierys_csv(csv_path):
     """Load a list of Fiery ip, username, passwords from a CSV file"""
@@ -576,7 +577,7 @@ def load_fierys_csv(csv_path):
         log_error('dump_fierys_csv: csv_path="%s" failed with %s' % (csv_path, e)) 
         return None
     return fiery_list  
-    
+
 
 def dump_fierys_csv(csv_path, fiery_list):
     """Save a list of Fiery ip, username, passwords to a CSV file"""
@@ -589,7 +590,7 @@ def dump_fierys_csv(csv_path, fiery_list):
         log_error('dump_fierys_csv: csv_path="%s" failed with %s' % (csv_path, e)) 
         return False
     return True 
-    
+
 
 def process_command_line():    
     """Process the command line.
