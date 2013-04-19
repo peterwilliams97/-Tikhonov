@@ -244,13 +244,12 @@ class FieryConnection:
 #
 # Job conversion/manipulation code
 #
-def convert_boolean(fy_bool_str):
+def convert_boolean(fy_bool):
     """Convert a Fiery boolean string to a PaperCut boolean string
         Fiery is Yes/No
         PaperCut is TRUE/FALSE
     """
-    first = fy_bool_str[0].lower() if fy_bool_str else None
-    return 'TRUE' if first == 'y' else 'FALSE'
+    return 'TRUE' if fy_bool and fy_bool[0].lower() == 'y' else 'FALSE'
 
     
 def convert_time(fiery_time):
