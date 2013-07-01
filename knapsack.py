@@ -5,24 +5,6 @@ from fractions import gcd
 import time
 import logging
 
-def solve_greedy(capacity, values, weights):
-
-    items = len(values)
-    # a trivial greedy algorithm for filling the knapsack
-    # it takes items in-order until the knapsack is full
-    value = 0
-    weight = 0
-    taken = []
-
-    for i in range(0, items):
-        if weight + weights[i] <= capacity:
-            taken.append(1)
-            value += values[i]
-            weight += weights[i]
-        else:
-            taken.append(0)
-
-    return value, taken
 
 
 def solve_dp(capacity, values, weights):
