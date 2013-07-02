@@ -58,7 +58,7 @@ import numpy as np
 n_elems = 0
 
 WEIGHT_RATIO = 0.9
-N_ENTRIES = 100
+N_ENTRIES = 2000
 
 WEIGHTS = WEIGHT_RATIO ** (1 + np.arange(N_ENTRIES))
 WEIGHTS = np.cumsum(WEIGHTS)
@@ -129,6 +129,7 @@ def get_state(values_weights, capacity, elements):
 def update_state(values_weights, value, capacity, added, removed):
     value += sum(values_weights[i][0] for i in added) - sum(values_weights[i][0] for i in removed)
     capacity -= sum(values_weights[i][1] for i in added) - sum(values_weights[i][1] for i in removed)   
+    assert value > 0, '\nadded=%s\removed=%s' % (added, removed)
     return value, capacity    
     
     
@@ -145,14 +146,20 @@ class Solution:
         elements: elements included in the knapsack
         complement: elements not included in the knapsacl
     """
-
+    
+    def _check(self):
+        assert self.value > 0, self
+        assert self.elements and self.complement, self
+        assert len(self.elements) + len(self.complement) == n_elems, self
+        assert not (self.elements & self.complement), self
+        
+        
     def __init__(self, value, capacity, elements, complement):
         self.capacity = capacity
         self.value = value
         self.elements = elements
         self.complement = complement
-        assert len(elements) + len(complement) == n_elems
-        assert not (self.elements & self.complement)
+        self._check()
         
     def __repr__(self):
         return repr(self.__dict__)
@@ -167,6 +174,7 @@ class Solution:
         return get_score(self.value, self.capacity)[1]
         
     def update(self, values_weights, added, removed):
+        self._check()
         value, capacity = update_state(values_weights, self.value, self.capacity, added, removed)
         elements = (self.elements | added) - removed
         complement = (self.complement | removed) - added
@@ -179,6 +187,7 @@ class Solution:
                 added,
                 removed,
                )
+        self._check()       
         return Solution(value, capacity, elements, complement) 
         
     def top_up(self, values_weights):
@@ -190,10 +199,12 @@ class Solution:
                 self.capacity -= w
                 self.elements.add(i)
                 self.complement.remove(i)
+        self._check()        
                 
     def update_top_up(self, values_weights, added, removed):            
         solution = self.update(values_weights, added, removed)
         solution.top_up(values_weights)
+        self._check()
         return solution
         
         
@@ -228,17 +239,34 @@ import bisect
 
 class SortedDeque(deque):
 
-    def __init__(self, iterable, size):
-        super(SortedDeque, self).__init__(sorted(iterable), size)
+    def __init__(self, iterable, maxlen):
+        super(SortedDeque, self).__init__(sorted(iterable), maxlen)
 
     def _insert(self, index, value):
+        
+        #print ' 1>', self, index, value 
         self.rotate(-index)
+        #print ' 2>', self, index, value
         self.appendleft(value)
+        #print ' 3>', self, index, value
         self.rotate(index)
+        #print ' 4>', self, index, value
+        #assert all(self[i-1] <= self[i] for i in range(1, len(self)))
 
     def insert(self, value):
+        if len(self) >= self.maxlen:
+            if value > self[-1]:
+                return
+            self.pop()
         self._insert(bisect.bisect_left(self, value), value)
 
+if False:        
+    d = SortedDeque([1,5,3], 3)
+    print d
+    for i in range(7):
+        d.insert(i)
+        print i, d, d[-1]
+    exit()
 
 def report(Q):
     def rpt(q):
@@ -271,7 +299,8 @@ def solve_ga(capacity, values, weights):
     elements, complement = [], range(n)
     complem_set = set(complement)
     Q = SortedDeque([], N_ENTRIES)
-        
+    Qset = set(frozenset(q[1].elements) for q in Q)
+    
     for i in range(N_ENTRIES * 10):
         value, cap, elts = solve_greedy(capacity, 0, values_weights, elements, complement)
         elts = set(elts)
@@ -281,7 +310,10 @@ def solve_ga(capacity, values, weights):
         solution = Solution(value, cap, elts, complem_set - elts)
         assert len(solution.elements) and len(solution.complement), '%d %d' % (
                 len(solution.elements), len(solution.complement)) 
-        Q.insert((-solution.score(), solution))
+        if frozenset(solution.elements) not in Qset:
+            Q.insert((-solution.score(), solution))
+            Qset = set(frozenset(q[1].elements) for q in Q)         
+       
         random.shuffle(complement) 
 
     best_value = Q[0][1].score() 
@@ -289,7 +321,7 @@ def solve_ga(capacity, values, weights):
     print 'best:', best_value, report(Q), Q[0][1].score()        
     print '-' * 80
     
-    Qset = set(frozenset(q[1].elements) for q in Q)
+    
     
     counter = count()
     counter2 = count()
@@ -302,19 +334,19 @@ def solve_ga(capacity, values, weights):
             assert Q[i][1].elements and Q[i][1].complement, 'i=%d,Q[i]=%s' % (i, Q[i])
             added, removed = mutate(Q[i][1].elements, Q[i][1].complement)
             solution = Q[i][1].update_top_up(values_weights, added, removed)
-            Q.insert((-solution.score(), solution))
-            #if frozenset(Q[i][1].elements) not in Qset:
-            #    Q.insert((-solution.score(), solution))
-            #    Qset = set(frozenset(q[1].elements) for q in Q)    
+            #Q.insert((-solution.score(), solution))
+            if frozenset(solution.elements) not in Qset:
+                Q.insert((-solution.score(), solution))
+                Qset = set(frozenset(q[1].elements) for q in Q)    
         else:    
             i1, i2 = spin_roulette_wheel_twice()
             move_2_to_1, move_1_to_2 = crossOver(Q[i1][1].elements, Q[i2][1].elements)
             for i, added, removed in (i1, move_2_to_1, move_1_to_2), (i2, move_1_to_2, move_2_to_1):
                 solution = Q[i][1].update_top_up(values_weights, added, removed)
-                Q.insert((-solution.score(), solution))
-                #if frozenset(Q[i][1].elements) not in Qset:
-                #    Q.insert((-solution.score(), solution))
-                #    Qset = set(frozenset(q[1].elements) for q in Q)  
+                #Q.insert((-solution.score(), solution))
+                if frozenset(solution.elements) not in Qset:
+                    Q.insert((-solution.score(), solution))
+                    Qset = set(frozenset(q[1].elements) for q in Q)  
 
         if Q[0][1].score() > best_value:
             best_value = Q[0][1].score()
@@ -325,6 +357,7 @@ def solve_ga(capacity, values, weights):
                 q = Q[i][1]
                 els = ', '.join('%d' % j for j in sorted(q.elements))
                 f.write('%d: %s\n' % (q.score(), els)) 
+            f.flush()
         
         #if next(counter2) % 100000 == 0:    
         #    print 'roulette_counts=%s' % roulette_counts
