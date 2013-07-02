@@ -3,54 +3,53 @@
 """
     A genetic algorithm implementation
     
- -------
+    -------
     3966813
     3967180   
-    
-http://doughellmann.com/2008/05/pymotw-heapq.html    
-    
-WEIGHT_RATIO = 0.8
-N_ENTRIES = 1000    
+        
+    http://doughellmann.com/2008/05/pymotw-heapq.html    
+        
+    WEIGHT_RATIO = 0.8
+    N_ENTRIES = 1000    
 
-best: 3951089 [3951089, 3476930, 3476521, 3476625, 3476020]
-best: 3951558 [3951558, 3476930, 3476521, 3476625, 3476020]
-best: 3958496 [3958496, 3476930, 3476521, 3476625, 3476020]
-best: 3958856 [3958856, 3476930, 3476521, 3476625, 3476020]
-best: 3959132 [3959132, 3476930, 3476521, 3476625, 3476020]
-best: 3959181 [3959181, 3476930, 3476521, 3476625, 3476020]
-best: 3959271 [3959271, 3476930, 3476521, 3476625, 3476020]
-best: 3959414 [3959414, 3476930, 3476521, 3476625, 3476020]
-best: 3960050 [3960050, 3476930, 3476521, 3476625, 3476020]
-best: 3960593 [3960593, 3476930, 3476521, 3476625, 3476020]
-best: 3960615 [3960615, 3476930, 3476521, 3476625, 3476020]
-best: 3962062 [3962062, 3476930, 3476521, 3476625, 3476020]
-best: 3963690 [3963690, 3476930, 3476521, 3476625, 3476020]
+    best: 3951089 [3951089, 3476930, 3476521, 3476625, 3476020]
+    best: 3951558 [3951558, 3476930, 3476521, 3476625, 3476020]
+    best: 3958496 [3958496, 3476930, 3476521, 3476625, 3476020]
+    best: 3958856 [3958856, 3476930, 3476521, 3476625, 3476020]
+    best: 3959132 [3959132, 3476930, 3476521, 3476625, 3476020]
+    best: 3959181 [3959181, 3476930, 3476521, 3476625, 3476020]
+    best: 3959271 [3959271, 3476930, 3476521, 3476625, 3476020]
+    best: 3959414 [3959414, 3476930, 3476521, 3476625, 3476020]
+    best: 3960050 [3960050, 3476930, 3476521, 3476625, 3476020]
+    best: 3960593 [3960593, 3476930, 3476521, 3476625, 3476020]
+    best: 3960615 [3960615, 3476930, 3476521, 3476625, 3476020]
+    best: 3962062 [3962062, 3476930, 3476521, 3476625, 3476020]
+    best: 3963690 [3963690, 3476930, 3476521, 3476625, 3476020]
+         
+          
+    --------------------------------------------------------------------------------
+
+    WEIGHT_RATIO = 0.9
+    N_ENTRIES = 2000
+
+    best: 3951474 [3951474, 3480800, 3480664, 3480762, 3480607]
+    best: 3952149 [3952149, 3480800, 3480664, 3480762, 3480607]
+    best: 3954524 [3954524, 3480800, 3480664, 3480762, 3480607]
+    best: 3956238 [3956238, 3480800, 3480664, 3480762, 3480607]
+    best: 3957084 [3957084, 3480800, 3480664, 3480762, 3480607]
+    best: 3957926 [3957926, 3480800, 3480664, 3480762, 3480607]
+    best: 3958718 [3958718, 3480800, 3480664, 3480762, 3480607]
+    best: 3958729 [3958729, 3480800, 3480664, 3480762, 3480607]
+    best: 3958899 [3958899, 3480800, 3480664, 3480762, 3480607]
+    best: 3960268 [3960268, 3480800, 3480664, 3480762, 3480607]
+    best: 3960381 [3960381, 3480800, 3480664, 3480762, 3480607]
+    best: 3961357 [3961357, 3480800, 3480664, 3480762, 3480607]
+    best: 3961818 [3961818, 3480800, 3480664, 3480762, 3480607]
+    best: 3961927 [3961927, 3480800, 3480664, 3480762, 3480607]
+    best: 3962126 [3962126, 3480800, 3480664, 3480762, 3480607]
+    best: 3962281 [3962281, 3480800, 3480664, 3480762, 3480607]
+    best: 3962871 [3962871, 3480800, 3480664, 3480762, 3480607]
      
-      
---------------------------------------------------------------------------------
-
-WEIGHT_RATIO = 0.9
-N_ENTRIES = 2000
-
-best: 3951474 [3951474, 3480800, 3480664, 3480762, 3480607]
-best: 3952149 [3952149, 3480800, 3480664, 3480762, 3480607]
-best: 3954524 [3954524, 3480800, 3480664, 3480762, 3480607]
-best: 3956238 [3956238, 3480800, 3480664, 3480762, 3480607]
-best: 3957084 [3957084, 3480800, 3480664, 3480762, 3480607]
-best: 3957926 [3957926, 3480800, 3480664, 3480762, 3480607]
-best: 3958718 [3958718, 3480800, 3480664, 3480762, 3480607]
-best: 3958729 [3958729, 3480800, 3480664, 3480762, 3480607]
-best: 3958899 [3958899, 3480800, 3480664, 3480762, 3480607]
-best: 3960268 [3960268, 3480800, 3480664, 3480762, 3480607]
-best: 3960381 [3960381, 3480800, 3480664, 3480762, 3480607]
-best: 3961357 [3961357, 3480800, 3480664, 3480762, 3480607]
-best: 3961818 [3961818, 3480800, 3480664, 3480762, 3480607]
-best: 3961927 [3961927, 3480800, 3480664, 3480762, 3480607]
-best: 3962126 [3962126, 3480800, 3480664, 3480762, 3480607]
-best: 3962281 [3962281, 3480800, 3480664, 3480762, 3480607]
-best: 3962871 [3962871, 3480800, 3480664, 3480762, 3480607]
- 
-
 """
 from __future__ import division
 import sys, os, random
@@ -59,19 +58,22 @@ import numpy as np
 n_elems = 0
 
 WEIGHT_RATIO = 0.9
-N_ENTRIES = 2000
+N_ENTRIES = 100
 
 WEIGHTS = WEIGHT_RATIO ** (1 + np.arange(N_ENTRIES))
 WEIGHTS = np.cumsum(WEIGHTS)
 WEIGHTS /= WEIGHTS[-1]      # Cumulative sums up to 1.0
 
+roulette_counts = np.zeros(N_ENTRIES, dtype=np.int)
     
 def spin_roulette_wheel():
     """ Find the roulette wheel winner
         returns: an index with probability proportional to index's weight
     """
-    return np.searchsorted(WEIGHTS, random.random())
-
+    i = np.searchsorted(WEIGHTS, random.random())
+    global roulette_counts
+    roulette_counts[i] += 1   
+    return i    
     
 def spin_roulette_wheel_twice():
     """" Spin the roulette wheel twice and return 2 different values """
@@ -88,8 +90,14 @@ def mutate(elements, complement):
        
     #print 'mutate:', len(elements), len(complement) 
     assert len(elements) + len(complement) == n_elems
-    added = random.sample(complement, N_REPLACEMENTS)
-    removed = random.sample(elements, N_REPLACEMENTS)
+    try:
+        added = random.sample(complement, N_REPLACEMENTS)
+        removed = random.sample(elements, N_REPLACEMENTS)
+    except Exception as e:
+        print e
+        print '%d elemensts' % len(elements)
+        print '%d complement' % len(complement)
+        return set([]), set([]) 
     
     return set(added), set(removed)
     
@@ -144,13 +152,19 @@ class Solution:
         self.elements = elements
         self.complement = complement
         assert len(elements) + len(complement) == n_elems
-        assert not self.elements & self.complement
+        assert not (self.elements & self.complement)
+        
+    def __repr__(self):
+        return repr(self.__dict__)
         
     def score(self):
         valid, scor = get_score(self.value, self.capacity)
         if valid:
             assert scor == self.value, 'valid=%s,score=%s,value=%s' % (valid, scor, self.value)
         return scor
+        
+    def valid(self):    
+        return get_score(self.value, self.capacity)[1]
         
     def update(self, values_weights, added, removed):
         value, capacity = update_state(values_weights, self.value, self.capacity, added, removed)
@@ -208,7 +222,29 @@ def solve_greedy(capacity, value, values_weights, elements, complement):
     
     
 from itertools import count
-from heapq import heappush, heappop, heappushpop    
+# from heapq import heappush, heappop, heappushpop    
+from collections import deque
+import bisect
+
+class SortedDeque(deque):
+
+    def __init__(self, iterable, size):
+        super(SortedDeque, self).__init__(sorted(iterable), size)
+
+    def _insert(self, index, value):
+        self.rotate(-index)
+        self.appendleft(value)
+        self.rotate(index)
+
+    def insert(self, value):
+        self._insert(bisect.bisect_left(self, value), value)
+
+
+def report(Q):
+    def rpt(q):
+        return '%.0f%s' % (q.score(), '' if q.valid() else '*')
+    return [rpt(Q[i][1]) for i in range(1,6)]
+    
 
 INVERSE_MUTATION_RATIO = 10    
 def solve_ga(capacity, values, weights):
@@ -217,6 +253,11 @@ def solve_ga(capacity, values, weights):
     
     values_weights = zip(values, weights)
     n = len(values_weights)
+    
+    path = 'best%d_%d.results' % (n, capacity)
+    f = open(path, 'wt')
+    f.write('WEIGHT_RATIO=%d\n' %  WEIGHT_RATIO)
+    f.write('N_ENTRIES=%d\n' %  N_ENTRIES)
     
     global n_elems
     n_elems = n
@@ -229,7 +270,8 @@ def solve_ga(capacity, values, weights):
     # Prime the heap with 1000 elements
     elements, complement = [], range(n)
     complem_set = set(complement)
-    Q = []
+    Q = SortedDeque([], N_ENTRIES)
+        
     for i in range(N_ENTRIES * 10):
         value, cap, elts = solve_greedy(capacity, 0, values_weights, elements, complement)
         elts = set(elts)
@@ -237,43 +279,52 @@ def solve_ga(capacity, values, weights):
         #    print (-Q[0][0], value, -value/Q[0][0],  i), 
         assert len(elts) and len(complem_set - elts), '%d %d' % (len(elts), len(complem_set - elts))     
         solution = Solution(value, cap, elts, complem_set - elts)
-        assert len(solution.elements) and len(solution.complement), '%d %d' % (len(solution.elements), len(solution.complement)) 
-        if len(Q) < N_ENTRIES:
-            heappush(Q, (solution.score(), solution))
-        else: 
-            heappushpop(Q, (solution.score(), solution))
+        assert len(solution.elements) and len(solution.complement), '%d %d' % (
+                len(solution.elements), len(solution.complement)) 
+        Q.insert((-solution.score(), solution))
         random.shuffle(complement) 
 
-    best_value = Q[-1][0]
+    best_value = Q[0][1].score() 
     print
-    print 'best:', best_value, [int(Q[-i][1].score()) for i in range(1,6)], Q[0][1].score()        
+    print 'best:', best_value, report(Q), Q[0][1].score()        
     print '-' * 80
     
+    Qset = set(frozenset(q[1].elements) for q in Q)
+    
     counter = count()
+    counter2 = count()
  
     while True:
+        assert len(Q) <= N_ENTRIES, 'len=%d' % len(Q)
+        
         if next(counter) % INVERSE_MUTATION_RATIO == 0:
             i = spin_roulette_wheel()
+            assert Q[i][1].elements and Q[i][1].complement, 'i=%d,Q[i]=%s' % (i, Q[i])
             added, removed = mutate(Q[i][1].elements, Q[i][1].complement)
             solution = Q[i][1].update_top_up(values_weights, added, removed)
-            heappushpop(Q, (solution.score(), solution))    
+            Q.insert((-solution.score(), solution))
+            #if frozenset(Q[i][1].elements) not in Qset:
+            #    Q.insert((-solution.score(), solution))
+            #    Qset = set(frozenset(q[1].elements) for q in Q)    
         else:    
             i1, i2 = spin_roulette_wheel_twice()
             move_2_to_1, move_1_to_2 = crossOver(Q[i1][1].elements, Q[i2][1].elements)
             for i, added, removed in (i1, move_2_to_1, move_1_to_2), (i2, move_1_to_2, move_2_to_1):
                 solution = Q[i][1].update_top_up(values_weights, added, removed)
-                heappushpop(Q, (solution.score(), solution))    
+                Q.insert((-solution.score(), solution))
+                #if frozenset(Q[i][1].elements) not in Qset:
+                #    Q.insert((-solution.score(), solution))
+                #    Qset = set(frozenset(q[1].elements) for q in Q)  
 
-        if Q[-1][1].score() > best_value:
-            best_value = Q[-1][1].score()
-            print 'best:', best_value, [int(Q[-i][1].score()) for i in range(1,6)], Q[0][1].score()  
+        if Q[0][1].score() > best_value:
+            best_value = Q[0][1].score()
+            print 'best:', best_value, report(Q), Q[0][1].score()  
             path = 'best%d.results' % best_value
-            with open(path, 'rt') as f:
-                f.write('WEIGHT_RATIO=%d\n' %  WEIGHT_RATIO)
-                f.write('N_ENTRIES=%d\n' %  N_ENTRIES)
-                for i in range(1,6):
-                    q = Q[-i][1]
-                    els = ', '.join('%d' % j for j in sorted(q.elements))
-                    f.write('%d: %s\n' % (q.score(), els)) 
-            
-
+            f.write('%s\n' % ('-' * 80))
+            for i in range(1,6):
+                q = Q[i][1]
+                els = ', '.join('%d' % j for j in sorted(q.elements))
+                f.write('%d: %s\n' % (q.score(), els)) 
+        
+        #if next(counter2) % 100000 == 0:    
+        #    print 'roulette_counts=%s' % roulette_counts
