@@ -57,11 +57,11 @@ from __future__ import division
 import sys, os, random
 import numpy as np
 
-VERSION_NUMBER = 103
+VERSION_NUMBER = 104
 
 n_elems = 0
 
-WEIGHT_RATIO = 0.97
+WEIGHT_RATIO = 0.95
 N_ENTRIES = 2000
 
 WEIGHTS = WEIGHT_RATIO ** (1 + np.arange(N_ENTRIES))
@@ -316,7 +316,7 @@ INVERSE_MUTATION_RATIO = 10
 def solve_ga(capacity, values, weights):
 
     print 'VERSION_NUMBER=%d' % VERSION_NUMBER
-    print 'WEIGHT_RATIO=%d' % WEIGHT_RATIO
+    print 'WEIGHT_RATIO=%.2f' % WEIGHT_RATIO
     print 'N_ENTRIES=%d' %  N_ENTRIES
    
     values_weights = zip(values, weights)
@@ -325,7 +325,7 @@ def solve_ga(capacity, values, weights):
     path = 'best%d_%d.results.%03d' % (n, capacity, VERSION_NUMBER)
     f = open(path, 'wt')
     f.write('VERSION_NUMBER=%d\n' %  VERSION_NUMBER)
-    f.write('WEIGHT_RATIO=%d\n' %  WEIGHT_RATIO)
+    f.write('WEIGHT_RATIO=%.2f\n' %  WEIGHT_RATIO)
     f.write('N_ENTRIES=%d\n' %  N_ENTRIES)
     f.write('values_weights=%s\n' %  list(enumerate(values_weights)))
     
