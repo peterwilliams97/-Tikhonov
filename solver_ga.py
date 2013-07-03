@@ -12,6 +12,8 @@
     3967036    109
     3967036    110
     3967036    111
+    3967116    112 
+    3967128    113  3967128: 0, 3, 4, 8, 9, 25, 109, value=3967128, capacity=5
 
 """
 from __future__ import division
@@ -19,10 +21,10 @@ import sys, os, random
 import numpy as np
 import math
 
-VERSION_NUMBER = 112
-WEIGHT_RATIO = 0.995
-N_ENTRIES = 4000
-N_PRIME_ENTRIES = 20000
+VERSION_NUMBER = 113
+WEIGHT_RATIO = 0.9
+N_ENTRIES = 400
+N_PRIME_ENTRIES = 400
 INVERSE_MUTATION_RATIO = 5
 N_REPLACEMENTS = 2  
 SORTED = True
@@ -220,6 +222,11 @@ class Solution:
         return solution
         
     def top_up(self, values_weights):
+        """
+        FIXME: Save smallest weight in values_weights 
+            and stop trying to fit when capacity < smallest weight
+            Precompute enumeration
+        """
         if self.capacity <= 0:
             return
         for i, (v, w) in enumerate(values_weights):
@@ -408,7 +415,7 @@ def solve_ga(capacity, values, weights):
         else:    
             i1, i2 = spin_roulette_wheel_twice()
             move_2_to_1, move_1_to_2 = crossOver(Q[i1][1].elements, Q[i2][1].elements)
-            # Don't update Q unti all crossovers are extracted, otherwise we will update the wrong elements
+            # Don't update Q until all crossovers are extracted, otherwise we will update the wrong elements
             solution1 = Q[i1][1].update_top_up(values_weights, move_2_to_1, move_1_to_2)
             solution2 = Q[i2][1].update_top_up(values_weights, move_1_to_2, move_2_to_1)
             for solution in (solution1, solution2):
@@ -420,12 +427,12 @@ def solve_ga(capacity, values, weights):
         if Q[0][1].score() > best_value:
             improvement = Q[0][1].score() - best_value
             best_value = Q[0][1].score()
-            print 'best: %s %s %4d %8d' % (best_value, report(Q), improvement, cnt) 
+            print 'best: %s %s %4d %8d' % (best_value, report(Q), improvement, cnt), 
             
             best_f = open(best_path, 'wt')    
             for f in (log_f, best_f):
-                log_f.write('%s\n' % ('-' * 80))
-                for i in range(1,6):
+                f.write('%s\n' % ('-' * 80))
+                for i in range(6):
                     q = Q[i][1]
                     els = ', '.join('%d' % j for j in sorted(q.elements))
                     f.write('%d: %s, value=%d, capacity=%d\n' % (q.score(), els, q.value, q.capacity)) 
@@ -437,5 +444,6 @@ def solve_ga(capacity, values, weights):
                     f.write('%d: %s, value=%d, capacity=%d\n' % (q.score(), els, q.value, q.capacity))     
                 f.flush()
             best_f.close()
+            print ';'
         #if next(counter2) % 100000 == 0:    
         #    print 'roulette_counts=%s' % roulette_counts
