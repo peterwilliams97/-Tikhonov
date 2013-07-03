@@ -58,12 +58,15 @@ from __future__ import division
 import sys, os, random
 import numpy as np
 
-VERSION_NUMBER = 105
+VERSION_NUMBER = 106
 
 n_elems = 0
 
 WEIGHT_RATIO = 0.96
-N_ENTRIES = 3000
+N_ENTRIES = 2000
+INVERSE_MUTATION_RATIO = 4
+N_REPLACEMENTS = 3  # !@#$
+SORTED = True
 
 WEIGHTS = WEIGHT_RATIO ** (1 + np.arange(N_ENTRIES))
 WEIGHTS = np.cumsum(WEIGHTS)
@@ -73,7 +76,7 @@ roulette_counts = np.zeros(N_ENTRIES, dtype=np.int)
 
 def spin_roulette_wheel():
     """ Find the roulette wheel winner
-        returns: an index with probability proportional to index's weight
+        returns: an index i = [0..N_ENTRIES) with probability proportional to WEIGHT_RATIO^(1+1)
     """
     i = np.searchsorted(WEIGHTS, random.random())
     global roulette_counts
@@ -89,7 +92,7 @@ def spin_roulette_wheel_twice():
             return i1, i2
 
 
-N_REPLACEMENTS = 3  # !@#$
+
 def mutate(elements, complement):
     """Replace N_REPLACEMENTS of the in elements itmes from complement and return it"""
        
@@ -313,21 +316,29 @@ def report(Q):
     
 
 
-INVERSE_MUTATION_RATIO = 10    
+    
 def solve_ga(capacity, values, weights):
 
     print 'VERSION_NUMBER=%d' % VERSION_NUMBER
     print 'WEIGHT_RATIO=%.2f' % WEIGHT_RATIO
     print 'N_ENTRIES=%d' %  N_ENTRIES
+    print 'INVERSE_MUTATION_RATIO=%d' %  INVERSE_MUTATION_RATIO
+    print 'N_REPLACEMENTS=%d' %  N_REPLACEMENTS
+    print 'SORTED=%s' %  SORTED
    
     values_weights = zip(values, weights)
     n = len(values_weights)
+    if SORTED:
+        values_weights.sort(key=lambda vw: vw[0]/vw[1])
     
     path = 'best%d_%d.results.%03d' % (n, capacity, VERSION_NUMBER)
     f = open(path, 'wt')
     f.write('VERSION_NUMBER=%d\n' %  VERSION_NUMBER)
     f.write('WEIGHT_RATIO=%.2f\n' %  WEIGHT_RATIO)
     f.write('N_ENTRIES=%d\n' %  N_ENTRIES)
+    f.write('INVERSE_MUTATION_RATIO=%d\n' %  INVERSE_MUTATION_RATIO)
+    f.write('N_REPLACEMENTS=%d\n' %  N_REPLACEMENTS)
+    f.write('SORTED=%s\n' %  SORTED)
     f.write('values_weights=%s\n' %  list(enumerate(values_weights)))
     
     
@@ -347,7 +358,7 @@ def solve_ga(capacity, values, weights):
     Qset = set(frozenset(q[1].elements) for q in Q)
     
 
-    for i in range(N_ENTRIES * 20):
+    for i in range(N_ENTRIES * 10):
         value, cap, elts = solve_greedy(capacity, 0, values_weights, elements, complement)
         elts = set(elts)
         #if i % N_ENTRIES == N_ENTRIES - 1:
@@ -375,7 +386,8 @@ def solve_ga(capacity, values, weights):
     while True:
         assert len(Q) <= N_ENTRIES, 'len=%d' % len(Q)
         
-        if next(counter) % INVERSE_MUTATION_RATIO == 0:
+        cnt = next(counter)
+        if cnt % INVERSE_MUTATION_RATIO == 0:
             i = spin_roulette_wheel()
             assert Q[i][1].elements and Q[i][1].complement, 'i=%d,Q[i]=%s' % (i, Q[i])
             added, removed = mutate(Q[i][1].elements, Q[i][1].complement)
@@ -411,7 +423,7 @@ def solve_ga(capacity, values, weights):
         if Q[0][1].score() > best_value:
             improvement = Q[0][1].score() - best_value
             best_value = Q[0][1].score()
-            print 'best:', best_value, report(Q), improvement  
+            print 'best:', best_value, report(Q), improvement, cnt  
             f.write('%s\n' % ('-' * 80))
             for i in range(1,6):
                 q = Q[i][1]
