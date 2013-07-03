@@ -7,7 +7,8 @@
     3966813
     3967180 
    *3967579 <= ME  
-    3968151    
+    3968944 001
+    3966882 002
         
     http://doughellmann.com/2008/05/pymotw-heapq.html    
         
@@ -57,7 +58,7 @@ from __future__ import division
 import sys, os, random
 import numpy as np
 
-VERSION_NUMBER = 1
+VERSION_NUMBER = 2
 
 n_elems = 0
 
@@ -88,7 +89,7 @@ def spin_roulette_wheel_twice():
             return i1, i2
 
 
-N_REPLACEMENTS = 3  # !@#$
+N_REPLACEMENTS = 1  # !@#$
 def mutate(elements, complement):
     """Replace N_REPLACEMENTS of the in elements itmes from complement and return it"""
        
