@@ -5,7 +5,9 @@
     
     -------
     3966813
-    3967180   
+    3967180 
+   *3967579 <= ME  
+    3968151    
         
     http://doughellmann.com/2008/05/pymotw-heapq.html    
         
@@ -55,17 +57,19 @@ from __future__ import division
 import sys, os, random
 import numpy as np
 
+VERSION_NUMBER = 1
+
 n_elems = 0
 
-WEIGHT_RATIO = 0.9
+WEIGHT_RATIO = 0.95
 N_ENTRIES = 2000
 
 WEIGHTS = WEIGHT_RATIO ** (1 + np.arange(N_ENTRIES))
 WEIGHTS = np.cumsum(WEIGHTS)
-WEIGHTS /= WEIGHTS[-1]      # Cumulative sums up to 1.0
+WEIGHTS /= WEIGHTS[-1]      # Cumulative sums [0.0 1.0]
 
 roulette_counts = np.zeros(N_ENTRIES, dtype=np.int)
-    
+
 def spin_roulette_wheel():
     """ Find the roulette wheel winner
         returns: an index with probability proportional to index's weight
@@ -84,14 +88,16 @@ def spin_roulette_wheel_twice():
             return i1, i2
 
 
-N_REPLACEMENTS = 1
+N_REPLACEMENTS = 3  # !@#$
 def mutate(elements, complement):
     """Replace N_REPLACEMENTS of the in elements itmes from complement and return it"""
        
     #print 'mutate:', len(elements), len(complement) 
     assert len(elements) + len(complement) == n_elems
     try:
-        added = random.sample(complement, N_REPLACEMENTS)
+        # !@#$
+        #added = random.sample(complement, N_REPLACEMENTS)
+        added = set([])
         removed = random.sample(elements, N_REPLACEMENTS)
     except Exception as e:
         print e
@@ -233,7 +239,6 @@ def solve_greedy(capacity, value, values_weights, elements, complement):
     
     
 from itertools import count
-# from heapq import heappush, heappop, heappushpop    
 from collections import deque
 import bisect
 
@@ -271,27 +276,34 @@ if False:
 def report(Q):
     def rpt(q):
         return '%.0f%s' % (q.score(), '' if q.valid() else '*')
-    return [rpt(Q[i][1]) for i in range(1,6)]
+    top = str([rpt(Q[i][1]) for i in range(0,6)]).replace("'", '')  
+    best = Q[0][1]     
+    return '%s value=%6d capacity=%4d' % (top, best.value, best.capacity) 
     
 
 INVERSE_MUTATION_RATIO = 10    
 def solve_ga(capacity, values, weights):
-    
-    random.seed(111) # The Nelson!
-    
+
+    print 'VERSION_NUMBER=%d' % VERSION_NUMBER
+    print 'WEIGHT_RATIO=%d' % WEIGHT_RATIO
+    print 'N_ENTRIES=%d' %  N_ENTRIES
+   
     values_weights = zip(values, weights)
     n = len(values_weights)
     
-    path = 'best%d_%d.results' % (n, capacity)
+    path = 'best%d_%d.results.%03d' % (n, capacity, VERSION_NUMBER)
     f = open(path, 'wt')
+    f.write('VERSION_NUMBER=%d\n' %  VERSION_NUMBER)
     f.write('WEIGHT_RATIO=%d\n' %  WEIGHT_RATIO)
     f.write('N_ENTRIES=%d\n' %  N_ENTRIES)
     
+    
+    random.seed(111) # The Nelson!
+       
+    
     global n_elems
     n_elems = n
-    
-    print 'WEIGHT_RATIO',  WEIGHT_RATIO
-    print 'N_ENTRIES', N_ENTRIES 
+ 
     
     best_value = 0
     
@@ -320,8 +332,7 @@ def solve_ga(capacity, values, weights):
     print
     print 'best:', best_value, report(Q), Q[0][1].score()        
     print '-' * 80
-    
-    
+        
     
     counter = count()
     counter2 = count()
@@ -333,7 +344,7 @@ def solve_ga(capacity, values, weights):
             i = spin_roulette_wheel()
             assert Q[i][1].elements and Q[i][1].complement, 'i=%d,Q[i]=%s' % (i, Q[i])
             added, removed = mutate(Q[i][1].elements, Q[i][1].complement)
-            solution = Q[i][1].update_top_up(values_weights, added, removed)
+            solution = Q[i][1].update_top_up(values_weights, added, removed) 
             #Q.insert((-solution.score(), solution))
             if frozenset(solution.elements) not in Qset:
                 Q.insert((-solution.score(), solution))
@@ -349,14 +360,14 @@ def solve_ga(capacity, values, weights):
                     Qset = set(frozenset(q[1].elements) for q in Q)  
 
         if Q[0][1].score() > best_value:
+            improvement = Q[0][1].score() - best_value
             best_value = Q[0][1].score()
-            print 'best:', best_value, report(Q), Q[0][1].score()  
-            path = 'best%d.results' % best_value
+            print 'best:', best_value, report(Q), improvement  
             f.write('%s\n' % ('-' * 80))
             for i in range(1,6):
                 q = Q[i][1]
                 els = ', '.join('%d' % j for j in sorted(q.elements))
-                f.write('%d: %s\n' % (q.score(), els)) 
+                f.write('%d: %s, value=%d, capacity=%d\n' % (q.score(), els, q.value, q.capacity)) 
             f.flush()
         
         #if next(counter2) % 100000 == 0:    
