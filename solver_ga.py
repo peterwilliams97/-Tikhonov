@@ -311,7 +311,7 @@ def report(Q):
 def solve_ga(capacity, values, weights):
 
     print 'VERSION_NUMBER=%d' % VERSION_NUMBER
-    print 'WEIGHT_RATIO=%log_f' % WEIGHT_RATIO
+    print 'WEIGHT_RATIO=%f' % WEIGHT_RATIO
     print 'N_ENTRIES=%d' %  N_ENTRIES
     print 'N_PRIME_ENTRIES=%d' %  N_PRIME_ENTRIES
     print 'INVERSE_MUTATION_RATIO=%d' %  INVERSE_MUTATION_RATIO
@@ -337,7 +337,7 @@ def solve_ga(capacity, values, weights):
     best_path = 'best%d_%d.best.%03d' % (n, capacity, VERSION_NUMBER)
     log_f = open(log_path, 'wt')
     log_f.write('VERSION_NUMBER=%d\n' %  VERSION_NUMBER)
-    log_f.write('WEIGHT_RATIO=%log_f\n' %  WEIGHT_RATIO)
+    log_f.write('WEIGHT_RATIO=%f\n' %  WEIGHT_RATIO)
     log_f.write('N_ENTRIES=%d\n' %  N_ENTRIES)
     log_f.write('N_PRIME_ENTRIES=%d\n' %  N_PRIME_ENTRIES)
     log_f.write('INVERSE_MUTATION_RATIO=%d\n' %  INVERSE_MUTATION_RATIO)
