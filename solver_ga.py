@@ -6,9 +6,8 @@
     -------
     3966813
     3967180 
-   *3967579 <= ME  
-    3968944 001
-    3966882 002
+   *3965180 <= ME  
+    
         
     http://doughellmann.com/2008/05/pymotw-heapq.html    
         
@@ -58,11 +57,11 @@ from __future__ import division
 import sys, os, random
 import numpy as np
 
-VERSION_NUMBER = 2
+VERSION_NUMBER = 103
 
 n_elems = 0
 
-WEIGHT_RATIO = 0.95
+WEIGHT_RATIO = 0.97
 N_ENTRIES = 2000
 
 WEIGHTS = WEIGHT_RATIO ** (1 + np.arange(N_ENTRIES))
@@ -89,7 +88,7 @@ def spin_roulette_wheel_twice():
             return i1, i2
 
 
-N_REPLACEMENTS = 1  # !@#$
+N_REPLACEMENTS = 3  # !@#$
 def mutate(elements, complement):
     """Replace N_REPLACEMENTS of the in elements itmes from complement and return it"""
        
@@ -119,12 +118,17 @@ def crossOver(c1, c2):
     shared = c1 &  c2
     d1 = c1 - shared
     d2 = c2 - shared
+    
+    #assert not (d1 & d2), '\n%s\n%s' % (d1, d2)
    
-    move_1_to_2 = random.sample(d1, (len(d1) + 1)// 2)
-    move_2_to_1 = random.sample(d2, (len(d2) + 1)// 2)
+    move_1_to_2 = set(random.sample(d1, (len(d1) + 1)// 2))
+    move_2_to_1 = set(random.sample(d2, (len(d2) + 1)// 2))
+    
+    #assert not (move_1_to_2 & c2), '\n%s\n%s' % (move_1_to_2, c2)
+    #assert not (move_2_to_1 & c1), '\n%s\n%s' % (move_2_to_1, c1)
         
     # Return shared + 1/2 of original + 1/2 swapped
-    return set(move_2_to_1), set(move_1_to_2)  
+    return move_2_to_1, move_1_to_2  
 
   
 def get_state(values_weights, capacity, elements):  
@@ -134,9 +138,10 @@ def get_state(values_weights, capacity, elements):
 
     
 def update_state(values_weights, value, capacity, added, removed):
+    #assert not (added & removed)
     value += sum(values_weights[i][0] for i in added) - sum(values_weights[i][0] for i in removed)
     capacity -= sum(values_weights[i][1] for i in added) - sum(values_weights[i][1] for i in removed)   
-    assert value > 0, '\nadded=%s\removed=%s' % (added, removed)
+    #assert value > 0, '\nadded=%s\removed=%s' % (added, removed)
     return value, capacity    
     
     
@@ -145,7 +150,18 @@ def get_score(value, capacity):
         return True, value
     else: 
         return False, value / (1.0 - capacity) / 2.0    
+
+
+def test(capacity, values_weights, solution):
+    return 
+    val = sum(values_weights[i][0] for i in solution.elements) 
     
+    assert val == solution.value, '\n%d %d %d\n%s' % (solution.value, val, solution.value - val, solution)
+    if capacity:
+        wgt = sum(values_weights[i][1] for i in solution.elements) 
+        assert capacity - wgt == solution.capacity, solution
+
+        
 class Solution:
     """A solution to the knapsack problem
         capacity: remaining capacity in the knapscack
@@ -155,11 +171,12 @@ class Solution:
     """
     
     def _check(self):
+        return
         assert self.value > 0, self
         assert self.elements and self.complement, self
         assert len(self.elements) + len(self.complement) == n_elems, self
         assert not (self.elements & self.complement), self
-        
+                
         
     def __init__(self, value, capacity, elements, complement):
         self.capacity = capacity
@@ -185,8 +202,9 @@ class Solution:
         value, capacity = update_state(values_weights, self.value, self.capacity, added, removed)
         elements = (self.elements | added) - removed
         complement = (self.complement | removed) - added
-        assert not self.elements & self.complement
-        assert not added & removed
+        #assert not self.elements & added
+        #assert not self.complement & removed
+        #assert not added & removed
         assert len(elements) + len(complement) == n_elems, '\n%d %s\n%d %s\n%s\n%s\n%s' % (
                 len(elements), sorted(elements), 
                 len(complement), sorted(complement),
@@ -194,8 +212,14 @@ class Solution:
                 added,
                 removed,
                )
-        self._check()       
-        return Solution(value, capacity, elements, complement) 
+        self._check() 
+        val = sum(values_weights[i][0] for i in elements)
+        #assert val == value, '\n%s\n%s\n\n%s\n%s' % (
+        #    sorted(added), sorted(elements-self.elements), 
+        #    sorted(removed),  sorted(self.elements-elements))
+        solution = Solution(value, capacity, elements, complement)
+        test(None, values_weights, solution)
+        return solution
         
     def top_up(self, values_weights):
         if self.capacity <= 0:
@@ -206,12 +230,16 @@ class Solution:
                 self.capacity -= w
                 self.elements.add(i)
                 self.complement.remove(i)
-        self._check()        
+        self._check()    
+        val = sum(values_weights[i][0] for i in self.elements)
+        assert val == self.value, self        
                 
     def update_top_up(self, values_weights, added, removed):            
         solution = self.update(values_weights, added, removed)
         solution.top_up(values_weights)
         self._check()
+        val = sum(values_weights[i][0] for i in self.elements)
+        assert val == self.value, self 
         return solution
         
         
@@ -281,6 +309,8 @@ def report(Q):
     best = Q[0][1]     
     return '%s value=%6d capacity=%4d' % (top, best.value, best.capacity) 
     
+    
+
 
 INVERSE_MUTATION_RATIO = 10    
 def solve_ga(capacity, values, weights):
@@ -297,6 +327,7 @@ def solve_ga(capacity, values, weights):
     f.write('VERSION_NUMBER=%d\n' %  VERSION_NUMBER)
     f.write('WEIGHT_RATIO=%d\n' %  WEIGHT_RATIO)
     f.write('N_ENTRIES=%d\n' %  N_ENTRIES)
+    f.write('values_weights=%s\n' %  list(enumerate(values_weights)))
     
     
     random.seed(111) # The Nelson!
@@ -314,6 +345,7 @@ def solve_ga(capacity, values, weights):
     Q = SortedDeque([], N_ENTRIES)
     Qset = set(frozenset(q[1].elements) for q in Q)
     
+
     for i in range(N_ENTRIES * 10):
         value, cap, elts = solve_greedy(capacity, 0, values_weights, elements, complement)
         elts = set(elts)
@@ -321,6 +353,7 @@ def solve_ga(capacity, values, weights):
         #    print (-Q[0][0], value, -value/Q[0][0],  i), 
         assert len(elts) and len(complem_set - elts), '%d %d' % (len(elts), len(complem_set - elts))     
         solution = Solution(value, cap, elts, complem_set - elts)
+        test(capacity, values_weights, solution)
         assert len(solution.elements) and len(solution.complement), '%d %d' % (
                 len(solution.elements), len(solution.complement)) 
         if frozenset(solution.elements) not in Qset:
@@ -345,7 +378,8 @@ def solve_ga(capacity, values, weights):
             i = spin_roulette_wheel()
             assert Q[i][1].elements and Q[i][1].complement, 'i=%d,Q[i]=%s' % (i, Q[i])
             added, removed = mutate(Q[i][1].elements, Q[i][1].complement)
-            solution = Q[i][1].update_top_up(values_weights, added, removed) 
+            solution = Q[i][1].update_top_up(values_weights, added, removed)
+            test(capacity, values_weights, solution)            
             #Q.insert((-solution.score(), solution))
             if frozenset(solution.elements) not in Qset:
                 Q.insert((-solution.score(), solution))
@@ -353,12 +387,25 @@ def solve_ga(capacity, values, weights):
         else:    
             i1, i2 = spin_roulette_wheel_twice()
             move_2_to_1, move_1_to_2 = crossOver(Q[i1][1].elements, Q[i2][1].elements)
-            for i, added, removed in (i1, move_2_to_1, move_1_to_2), (i2, move_1_to_2, move_2_to_1):
-                solution = Q[i][1].update_top_up(values_weights, added, removed)
-                #Q.insert((-solution.score(), solution))
+            # assert not (move_2_to_1 & Q[i1][1].elements), 'i=%d' % (i1)
+            #assert not (move_1_to_2 & Q[i2][1].elements), 'i=%d' % (i2)
+            # Don't update Q unti all crossovers are extracted, otherwise we will update the wrong elements
+            solution1 = Q[i1][1].update_top_up(values_weights, move_2_to_1, move_1_to_2)
+            solution2 = Q[i2][1].update_top_up(values_weights, move_1_to_2, move_2_to_1)
+            for solution in (solution1, solution2):
                 if frozenset(solution.elements) not in Qset:
                     Q.insert((-solution.score(), solution))
-                    Qset = set(frozenset(q[1].elements) for q in Q)  
+                    Qset = set(frozenset(q[1].elements) for q in Q) 
+            if False:
+                for i, added, removed in (i1, move_2_to_1, move_1_to_2), (i2, move_1_to_2, move_2_to_1):
+                    assert not (added & Q[i][1].elements), 'i=%d,i1=%d,i2=%d\n added      =%s\n move_2_to_1=%s\n move_1_to_2=%s' % (
+                        i, i1, i2, added, move_2_to_1, move_1_to_2)  
+                    solution = Q[i][1].update_top_up(values_weights, added, removed)
+                    test(capacity, values_weights, solution)   
+                    #Q.insert((-solution.score(), solution))
+                    if frozenset(solution.elements) not in Qset:
+                        Q.insert((-solution.score(), solution))
+                        Qset = set(frozenset(q[1].elements) for q in Q)  
 
         if Q[0][1].score() > best_value:
             improvement = Q[0][1].score() - best_value
