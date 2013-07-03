@@ -57,16 +57,27 @@
 from __future__ import division
 import sys, os, random
 import numpy as np
+import math
 
-VERSION_NUMBER = 106
+VERSION_NUMBER = 107
 
 n_elems = 0
 
-WEIGHT_RATIO = 0.96
-N_ENTRIES = 2000
-INVERSE_MUTATION_RATIO = 4
-N_REPLACEMENTS = 3  # !@#$
+WEIGHT_RATIO = 0.95
+N_ENTRIES = 1000
+N_PRIME_ENTRIES = 20000
+INVERSE_MUTATION_RATIO = 10
+N_REPLACEMENTS = 3  
 SORTED = True
+
+# 10^-9 == weight_ratio ^ n_entries
+# n_entries = log(10^-9, weight_ratio)
+
+if False:
+    for wr in (0.9, 0.95, 0.99):
+        n = -int(math.log(10**9, wr))
+        print wr, n
+    exit()  
 
 WEIGHTS = WEIGHT_RATIO ** (1 + np.arange(N_ENTRIES))
 WEIGHTS = np.cumsum(WEIGHTS)
@@ -322,6 +333,7 @@ def solve_ga(capacity, values, weights):
     print 'VERSION_NUMBER=%d' % VERSION_NUMBER
     print 'WEIGHT_RATIO=%.2f' % WEIGHT_RATIO
     print 'N_ENTRIES=%d' %  N_ENTRIES
+    print 'N_PRIME_ENTRIES=%d' %  N_PRIME_ENTRIES
     print 'INVERSE_MUTATION_RATIO=%d' %  INVERSE_MUTATION_RATIO
     print 'N_REPLACEMENTS=%d' %  N_REPLACEMENTS
     print 'SORTED=%s' %  SORTED
@@ -336,11 +348,12 @@ def solve_ga(capacity, values, weights):
     f.write('VERSION_NUMBER=%d\n' %  VERSION_NUMBER)
     f.write('WEIGHT_RATIO=%.2f\n' %  WEIGHT_RATIO)
     f.write('N_ENTRIES=%d\n' %  N_ENTRIES)
+    f.write('N_PRIME_ENTRIES=%d\n' %  N_PRIME_ENTRIES)
     f.write('INVERSE_MUTATION_RATIO=%d\n' %  INVERSE_MUTATION_RATIO)
     f.write('N_REPLACEMENTS=%d\n' %  N_REPLACEMENTS)
     f.write('SORTED=%s\n' %  SORTED)
-    f.write('values_weights=%s\n' %  list(enumerate(values_weights)))
-    
+    f.write('values_weights=%s\n' % [(i,v,w,v/w) for i,(v,w) in enumerate(values_weights)])
+
     
     random.seed(111) # The Nelson!
        
@@ -358,7 +371,7 @@ def solve_ga(capacity, values, weights):
     Qset = set(frozenset(q[1].elements) for q in Q)
     
 
-    for i in range(N_ENTRIES * 10):
+    for i in range(N_PRIME_ENTRIES):
         value, cap, elts = solve_greedy(capacity, 0, values_weights, elements, complement)
         elts = set(elts)
         #if i % N_ENTRIES == N_ENTRIES - 1:
@@ -423,7 +436,7 @@ def solve_ga(capacity, values, weights):
         if Q[0][1].score() > best_value:
             improvement = Q[0][1].score() - best_value
             best_value = Q[0][1].score()
-            print 'best:', best_value, report(Q), improvement, cnt  
+            print 'best: %s %s %4d %8d' % (best_value, report(Q), improvement, cnt)  
             f.write('%s\n' % ('-' * 80))
             for i in range(1,6):
                 q = Q[i][1]
