@@ -8,6 +8,7 @@
     3967180 
    *3966200 <= 104  
     3965897    105
+    3967036    108
 
 """
 from __future__ import division
@@ -15,12 +16,12 @@ import sys, os, random
 import numpy as np
 import math
 
-VERSION_NUMBER = 108
-WEIGHT_RATIO = 0.95
+VERSION_NUMBER = 109
+WEIGHT_RATIO = 0.96
 N_ENTRIES = 1000
-N_PRIME_ENTRIES = 5000
+N_PRIME_ENTRIES = 10000
 INVERSE_MUTATION_RATIO = 10
-N_REPLACEMENTS = 3  
+N_REPLACEMENTS = 4  
 SORTED = True
 
 n_elems = 0
@@ -124,6 +125,8 @@ def get_score(value, capacity):
 
 def test(capacity, values_weights, solution):
     return 
+    
+def test2(capacity, values_weights, solution):    
     val = sum(values_weights[i][0] for i in solution.elements) 
     
     assert val == solution.value, '\n%d %d %d\n%s' % (solution.value, val, solution.value - val, solution)
@@ -131,6 +134,16 @@ def test(capacity, values_weights, solution):
         wgt = sum(values_weights[i][1] for i in solution.elements) 
         assert capacity - wgt == solution.capacity, solution
 
+class Tester:
+
+    def setup(self, capacity, values_weights):
+        self.capacity = capacity
+        self.values_weights = values_weights
+    
+    def test(self, solution):
+        test2(self.capacity, self.values_weights, solution)
+        
+tester = Tester()
         
 class Solution:
     """A solution to the knapsack problem
@@ -175,13 +188,13 @@ class Solution:
         #assert not self.elements & added
         #assert not self.complement & removed
         #assert not added & removed
-        assert len(elements) + len(complement) == n_elems, '\n%d %s\n%d %s\n%s\n%s\n%s' % (
-                len(elements), sorted(elements), 
-                len(complement), sorted(complement),
-                elements & complement,
-                added,
-                removed,
-               )
+        #assert len(elements) + len(complement) == n_elems, '\n%d %s\n%d %s\n%s\n%s\n%s' % (
+        #        len(elements), sorted(elements), 
+        #        len(complement), sorted(complement),
+        #        elements & complement,
+        #        added,
+        #        removed,
+        #       )
         self._check() 
         val = sum(values_weights[i][0] for i in elements)
         #assert val == value, '\n%s\n%s\n\n%s\n%s' % (
@@ -273,14 +286,15 @@ if False:
     exit()
 
 def report(Q):
+    for i in range(6):
+        tester.test(Q[i][1])
     def rpt(q):
         return '%.0f%s' % (q.score(), '' if q.valid() else '*')
     top = str([rpt(Q[i][1]) for i in range(0,6)]).replace("'", '')  
     best = Q[0][1]     
     return '%s value=%6d capacity=%4d' % (top, best.value, best.capacity) 
-    
-    
-
+  
+  
 
     
 def solve_ga(capacity, values, weights):
@@ -296,7 +310,17 @@ def solve_ga(capacity, values, weights):
     values_weights = zip(values, weights)
     n = len(values_weights)
     if SORTED:
+        i_values_weights = list(enumerate(values_weights))
+        i_values_weights.sort(key=lambda vw: -vw[1][0]/vw[1][1])
+        indexes, values_weights2 = zip(*i_values_weights)
         values_weights.sort(key=lambda vw: -vw[0]/vw[1])
+
+        for i in range(len(values_weights)):
+            assert values_weights2[i] == values_weights[i]
+    else:
+        indexes = range(n)
+        
+    tester.setup(capacity, values_weights)    
     
     path = 'best%d_%d.results.%03d' % (n, capacity, VERSION_NUMBER)
     f = open(path, 'wt')
@@ -397,6 +421,12 @@ def solve_ga(capacity, values, weights):
                 q = Q[i][1]
                 els = ', '.join('%d' % j for j in sorted(q.elements))
                 f.write('%d: %s, value=%d, capacity=%d\n' % (q.score(), els, q.value, q.capacity)) 
+            f.write('%s\n' % ('$' * 40))
+            for i in range(1,6):
+                q = Q[i][1]
+                elements = [indexes[j] for j in q.elements]
+                els = ', '.join('%d' % j for j in sorted(elements))
+                f.write('%d: %s, value=%d, capacity=%d\n' % (q.score(), els, q.value, q.capacity))     
             f.flush()
         
         #if next(counter2) % 100000 == 0:    
