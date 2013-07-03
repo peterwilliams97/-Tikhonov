@@ -7,6 +7,7 @@
     3966813
     3967180 
    *3965180 <= ME  
+    3965897
     
         
     http://doughellmann.com/2008/05/pymotw-heapq.html    
@@ -57,12 +58,12 @@ from __future__ import division
 import sys, os, random
 import numpy as np
 
-VERSION_NUMBER = 104
+VERSION_NUMBER = 105
 
 n_elems = 0
 
-WEIGHT_RATIO = 0.95
-N_ENTRIES = 2000
+WEIGHT_RATIO = 0.96
+N_ENTRIES = 3000
 
 WEIGHTS = WEIGHT_RATIO ** (1 + np.arange(N_ENTRIES))
 WEIGHTS = np.cumsum(WEIGHTS)
@@ -346,7 +347,7 @@ def solve_ga(capacity, values, weights):
     Qset = set(frozenset(q[1].elements) for q in Q)
     
 
-    for i in range(N_ENTRIES * 10):
+    for i in range(N_ENTRIES * 20):
         value, cap, elts = solve_greedy(capacity, 0, values_weights, elements, complement)
         elts = set(elts)
         #if i % N_ENTRIES == N_ENTRIES - 1:
