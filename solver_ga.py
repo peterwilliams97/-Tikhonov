@@ -9,6 +9,7 @@
    *3966200 <= 104  
     3965897    105
     3967036    108
+    3967036    109
 
 """
 from __future__ import division
@@ -16,11 +17,11 @@ import sys, os, random
 import numpy as np
 import math
 
-VERSION_NUMBER = 109
+VERSION_NUMBER = 110
 WEIGHT_RATIO = 0.96
 N_ENTRIES = 1000
-N_PRIME_ENTRIES = 10000
-INVERSE_MUTATION_RATIO = 10
+N_PRIME_ENTRIES = 1000
+INVERSE_MUTATION_RATIO = 5
 N_REPLACEMENTS = 4  
 SORTED = True
 
@@ -116,12 +117,20 @@ def update_state(values_weights, value, capacity, added, removed):
     return value, capacity    
     
     
+total_capacity = 4743183
+
 def get_score(value, capacity):
     if capacity >= 0:
         return True, value
     else: 
-        return False, value / (1.0 - capacity) / 2.0    
+        return False, value / ((1.0 - capacity/total_capacity) ** 4)  
 
+        
+def get_score_(value, capacity):
+    if capacity >= 0:
+        return True, value
+    else: 
+        return False, value / (1.0 - capacity) / 2.0        
 
 def test(capacity, values_weights, solution):
     return 
@@ -392,8 +401,6 @@ def solve_ga(capacity, values, weights):
         else:    
             i1, i2 = spin_roulette_wheel_twice()
             move_2_to_1, move_1_to_2 = crossOver(Q[i1][1].elements, Q[i2][1].elements)
-            # assert not (move_2_to_1 & Q[i1][1].elements), 'i=%d' % (i1)
-            #assert not (move_1_to_2 & Q[i2][1].elements), 'i=%d' % (i2)
             # Don't update Q unti all crossovers are extracted, otherwise we will update the wrong elements
             solution1 = Q[i1][1].update_top_up(values_weights, move_2_to_1, move_1_to_2)
             solution2 = Q[i2][1].update_top_up(values_weights, move_1_to_2, move_2_to_1)
@@ -401,16 +408,7 @@ def solve_ga(capacity, values, weights):
                 if frozenset(solution.elements) not in Qset:
                     Q.insert((-solution.score(), solution))
                     Qset = set(frozenset(q[1].elements) for q in Q) 
-            if False:
-                for i, added, removed in (i1, move_2_to_1, move_1_to_2), (i2, move_1_to_2, move_2_to_1):
-                    assert not (added & Q[i][1].elements), 'i=%d,i1=%d,i2=%d\n added      =%s\n move_2_to_1=%s\n move_1_to_2=%s' % (
-                        i, i1, i2, added, move_2_to_1, move_1_to_2)  
-                    solution = Q[i][1].update_top_up(values_weights, added, removed)
-                    test(capacity, values_weights, solution)   
-                    #Q.insert((-solution.score(), solution))
-                    if frozenset(solution.elements) not in Qset:
-                        Q.insert((-solution.score(), solution))
-                        Qset = set(frozenset(q[1].elements) for q in Q)  
+             
 
         if Q[0][1].score() > best_value:
             improvement = Q[0][1].score() - best_value
