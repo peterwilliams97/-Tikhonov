@@ -10,6 +10,8 @@
     3965897    105
     3967036    108
     3967036    109
+    3967036    110
+    3967036    111
 
 """
 from __future__ import division
@@ -17,10 +19,10 @@ import sys, os, random
 import numpy as np
 import math
 
-VERSION_NUMBER = 111
-WEIGHT_RATIO = 0.99
-N_ENTRIES = 2000
-N_PRIME_ENTRIES = 10000
+VERSION_NUMBER = 112
+WEIGHT_RATIO = 0.995
+N_ENTRIES = 3000
+N_PRIME_ENTRIES = 20000
 INVERSE_MUTATION_RATIO = 5
 N_REPLACEMENTS = 2  
 SORTED = True
@@ -123,7 +125,7 @@ def get_score(value, capacity):
     if capacity >= 0:
         return True, value
     else: 
-        return False, value / ((1.0 - capacity/total_capacity) ** 4)  
+        return False, value / ((1.0 - capacity/total_capacity) ** 2)  
 
         
 def get_score_(value, capacity):
@@ -309,7 +311,7 @@ def report(Q):
 def solve_ga(capacity, values, weights):
 
     print 'VERSION_NUMBER=%d' % VERSION_NUMBER
-    print 'WEIGHT_RATIO=%.2f' % WEIGHT_RATIO
+    print 'WEIGHT_RATIO=%log_f' % WEIGHT_RATIO
     print 'N_ENTRIES=%d' %  N_ENTRIES
     print 'N_PRIME_ENTRIES=%d' %  N_PRIME_ENTRIES
     print 'INVERSE_MUTATION_RATIO=%d' %  INVERSE_MUTATION_RATIO
@@ -331,16 +333,17 @@ def solve_ga(capacity, values, weights):
         
     tester.setup(capacity, values_weights)    
     
-    path = 'best%d_%d.results.%03d' % (n, capacity, VERSION_NUMBER)
-    f = open(path, 'wt')
-    f.write('VERSION_NUMBER=%d\n' %  VERSION_NUMBER)
-    f.write('WEIGHT_RATIO=%.2f\n' %  WEIGHT_RATIO)
-    f.write('N_ENTRIES=%d\n' %  N_ENTRIES)
-    f.write('N_PRIME_ENTRIES=%d\n' %  N_PRIME_ENTRIES)
-    f.write('INVERSE_MUTATION_RATIO=%d\n' %  INVERSE_MUTATION_RATIO)
-    f.write('N_REPLACEMENTS=%d\n' %  N_REPLACEMENTS)
-    f.write('SORTED=%s\n' %  SORTED)
-    f.write('values_weights=%s\n' % [(i,v,w,v/w) for i,(v,w) in enumerate(values_weights)])
+    log_path = 'best%d_%d.results.%03d' % (n, capacity, VERSION_NUMBER)
+    best_path = 'best%d_%d.best.%03d' % (n, capacity, VERSION_NUMBER)
+    log_f = open(log_path, 'wt')
+    log_f.write('VERSION_NUMBER=%d\n' %  VERSION_NUMBER)
+    log_f.write('WEIGHT_RATIO=%log_f\n' %  WEIGHT_RATIO)
+    log_f.write('N_ENTRIES=%d\n' %  N_ENTRIES)
+    log_f.write('N_PRIME_ENTRIES=%d\n' %  N_PRIME_ENTRIES)
+    log_f.write('INVERSE_MUTATION_RATIO=%d\n' %  INVERSE_MUTATION_RATIO)
+    log_f.write('N_REPLACEMENTS=%d\n' %  N_REPLACEMENTS)
+    log_f.write('SORTED=%s\n' %  SORTED)
+    log_f.write('values_weights=%s\n' % [(i,v,w,v/w) for i,(v,w) in enumerate(values_weights)])
 
     
     random.seed(111) # The Nelson!
@@ -413,19 +416,22 @@ def solve_ga(capacity, values, weights):
         if Q[0][1].score() > best_value:
             improvement = Q[0][1].score() - best_value
             best_value = Q[0][1].score()
-            print 'best: %s %s %4d %8d' % (best_value, report(Q), improvement, cnt)  
-            f.write('%s\n' % ('-' * 80))
-            for i in range(1,6):
-                q = Q[i][1]
-                els = ', '.join('%d' % j for j in sorted(q.elements))
-                f.write('%d: %s, value=%d, capacity=%d\n' % (q.score(), els, q.value, q.capacity)) 
-            f.write('%s\n' % ('$' * 40))
-            for i in range(1,6):
-                q = Q[i][1]
-                elements = [indexes[j] for j in q.elements]
-                els = ', '.join('%d' % j for j in sorted(elements))
-                f.write('%d: %s, value=%d, capacity=%d\n' % (q.score(), els, q.value, q.capacity))     
-            f.flush()
-        
+            print 'best: %s %s %4d %8d' % (best_value, report(Q), improvement, cnt) 
+            
+            best_f = open(best_path, 'wt')    
+            for f in (log_f, best_f):
+                log_f.write('%s\n' % ('-' * 80))
+                for i in range(1,6):
+                    q = Q[i][1]
+                    els = ', '.join('%d' % j for j in sorted(q.elements))
+                    f.write('%d: %s, value=%d, capacity=%d\n' % (q.score(), els, q.value, q.capacity)) 
+                f.write('%s\n' % ('$' * 40))
+                for i in range(1,6):
+                    q = Q[i][1]
+                    elements = [indexes[j] for j in q.elements]
+                    els = ', '.join('%d' % j for j in sorted(elements))
+                    f.write('%d: %s, value=%d, capacity=%d\n' % (q.score(), els, q.value, q.capacity))     
+                f.flush()
+            best_f.close()
         #if next(counter2) % 100000 == 0:    
         #    print 'roulette_counts=%s' % roulette_counts
