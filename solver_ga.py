@@ -21,7 +21,7 @@ import math
 
 VERSION_NUMBER = 112
 WEIGHT_RATIO = 0.995
-N_ENTRIES = 3000
+N_ENTRIES = 4000
 N_PRIME_ENTRIES = 20000
 INVERSE_MUTATION_RATIO = 5
 N_REPLACEMENTS = 2  
@@ -33,7 +33,11 @@ n_elems = 0
 # n_entries = log(10^-9, weight_ratio)
 
 if False:
-    for wr in (0.9, 0.95, 0.99):
+    #0.9 196
+    #0.95 404
+    #0.99 2061
+    #0.995 4134
+    for wr in (0.9, 0.95, 0.99, 0.995):
         n = -int(math.log(10**9, wr))
         print wr, n
     exit()  
