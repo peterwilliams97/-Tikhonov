@@ -21,7 +21,7 @@ import sys, os, random
 import numpy as np
 import math
 
-VERSION_NUMBER = 113
+VERSION_NUMBER = 114
 WEIGHT_RATIO = 0.9
 N_ENTRIES = 400
 N_PRIME_ENTRIES = 400
