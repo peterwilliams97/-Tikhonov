@@ -95,6 +95,7 @@ def crossOver(c1, c2):
     """
 
     # Find elements that are not in both lists
+    
     shared = c1 &  c2
     d1 = c1 - shared
     d2 = c2 - shared
@@ -269,7 +270,18 @@ def solve_greedy(capacity, value, values_weights, elements, complement):
         capacity -= w
         taken.append(i)
 
-    return value, capacity, taken        
+    return value, capacity, taken       
+
+import time
+
+class Timer:
+        
+    def __init__(self, duration):
+        self.expiry = time.time() + duration
+        
+    def expired(self):
+        #print time.time(), self.expiry, time.time() - self.expiry
+        return time.time() > self.expiry
     
     
 from itertools import count
@@ -319,7 +331,7 @@ def report(Q):
   
 
     
-def solve_ga(capacity, values, weights):
+def solve_ga(capacity, values, weights, max_time):
 
     print 'VERSION_NUMBER=%d' % VERSION_NUMBER
     print 'WEIGHT_RATIO=%f' % WEIGHT_RATIO
@@ -342,7 +354,9 @@ def solve_ga(capacity, values, weights):
     else:
         indexes = range(n)
         
-    tester.setup(capacity, values_weights)    
+    tester.setup(capacity, values_weights)
+
+    timer = Timer(max_time)    
     
     log_path = 'best%d_%d.results.%03d' % (n, capacity, VERSION_NUMBER)
     best_path = 'best%d_%d.best.%03d' % (n, capacity, VERSION_NUMBER)
@@ -398,10 +412,19 @@ def solve_ga(capacity, values, weights):
     counter = count()
     counter2 = count()
  
-    while True:
+    #while True:
+    for cnt in count():
         assert len(Q) <= N_ENTRIES, 'len=%d' % len(Q)
         
-        cnt = next(counter)
+        #cnt = next(counter)
+        if cnt % 1000 == 0:
+            #print '***', cnt
+            if timer.expired():
+                for _, q in Q:
+                    if q.capacity >= 0:
+                        return q.value, list(q.elements), False
+            
+        
         if cnt % INVERSE_MUTATION_RATIO == 0:
             i = spin_roulette_wheel()
             assert Q[i][1].elements and Q[i][1].complement, 'i=%d,Q[i]=%s' % (i, Q[i])

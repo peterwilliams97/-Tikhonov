@@ -60,15 +60,31 @@ def solve_dp(capacity, values, weights):
     return value, taken, True
 
     
+def ancestors_ptr_list(ptr):
+    items = []
+    while ptr:
+        ptr, i = ptr
+        items.append(i)
+    return items
+    
+    
+def ancestors_list_ptr(items):
+    ptr = None
+    for i in items:
+        ptr = [ptr, i]
+    return ptr 
+    
+    
 from itertools import count
 from heapq import heappush, heappop
 
 DEPTH_FIRST, BEST_FIRST, HYBRID = range(3)
 
-def solve_bb(capacity, values, weights, method, max_time):
+def solve_bb(capacity, values, weights, method, max_time, best_in=None):
     """Branch and bound solution"""
     
-    logging.info('solve_bb" method=%d,max_time=%d', method, max_time)
+    print 'solve_bb" method=%d,max_time=%d,best_in=%s' % (method, max_time, best_in)
+    logging.info('solve_bb" method=%d,max_time=%d,best_in=%s' % (method, max_time, best_in))
     
     n = len(values)
     indexes = range(n)
@@ -76,14 +92,13 @@ def solve_bb(capacity, values, weights, method, max_time):
     values_weights = [(values[i], weights[i]) for i in indexes]
  
     best = [0, []]
+    if best_in:
+        inverse_indexes = list(enumerate(indexes))
+        inverse_indexes.sort(key=lambda x: x[1])
+        inverse_indexes = [i for _, i in inverse_indexes]
+        best[0] = best_in[0]
+        best[1] = ancestors_list_ptr([inverse_indexes[i] for i in best_in[1]])
     
-    def ancestors(ptr):
-        ancests = []
-        while ptr:
-            ptr, item = ptr
-            ancests.append(item)
-        return ancests
-
     counter = count()
     end_time = time.time() + max_time
     timedout = [False]
@@ -95,7 +110,7 @@ def solve_bb(capacity, values, weights, method, max_time):
 
     def bound(sv, sw, m):
         """Return an upper bound on the value of a knapsack
-            whose first m items (in v/w sorted order) have
+            whose first m items (in v/w descending order) have
             value sv and weight sw
         """
         if m == n:
@@ -108,30 +123,28 @@ def solve_bb(capacity, values, weights, method, max_time):
         return sv + (capacity - sw) * av/aw
     
     def branch(sv, sw, m, parent):
-        """Given a node n elements from the root with 
-            value sv and weight sw in the m elements,
-            generate all nodes below this node
+        """Given a node n elements from the root with value sv and weight sw in the m elements,
+            generate all nodes below this node that are better than best[0]
         """
         if sw > capacity:
             return
         if sv > best[0]:
             best[0], best[1] = sv, parent
-            print 'best=%d' % best[0],
-            if best[0] > 8000:
-                print sorted(ancestors(parent))
-            else:
-                print
+            if True:
+                print 'best=%d' % best[0],
+                if best[0] > 8000:
+                    print sorted(ancestors_ptr_list(parent))
+                else:
+                    print
         if m == n:
             return
-        i = indexes[m]
+        i = indexes[m]  # !!! Insert original index, not sorted index
         v, w = values_weights[m]
         choices = ((sv, sw, parent), (sv + v, sw + w, [parent, i]))
         for sv, sw, ptr in choices:
             b = bound(sv, sw, m+1)
             if b > best[0]:
                 yield b, branch(sv, sw, m+1, ptr)
-
-
        
     def explore_depth_first(node):
         print 'number items:', len(values_weights), len(values), len(weights)
@@ -139,7 +152,7 @@ def solve_bb(capacity, values, weights, method, max_time):
         while stack and not timedout[0]:
             for _, node in stack.pop():
                 stack.append(node)
-                
+  
     def explore_best_first(node):            
         heap = [(0, next(counter), node)]
         while heap and not timedout[0]:
@@ -167,7 +180,7 @@ def solve_bb(capacity, values, weights, method, max_time):
     elif method == HYBRID:
         explore_hybrid(branch(0, 0, 0, None))
         
-    return best[0], ancestors(best[1]), not timedout[0]
+    return best[0], ancestors_ptr_list(best[1]), not timedout[0]
     
 
 def gcds(lst):
@@ -191,15 +204,15 @@ def solve(capacity, values, weights):
     print 'n=%d' % n
     print 'capacity=%d' % capacity
     print 'n * capacity=%d' % (n * capacity)
-        
-    # !@#$    
-    value, taken, optimal = solve_ga(capacity, values, weights)    
-        
-    if n < 20 or n * capacity > 10 ** 8:
+   
+    if n < 20:
         value, taken, optimal = solve_bb(capacity, values, weights, HYBRID, MAX_TIME)
-    else: 
+    elif n * capacity <= 10 ** 8: 
         value, taken, optimal = solve_dp(capacity, values, weights)
-    
+    else:
+        value, taken, optimal = solve_ga(capacity, values, weights, 120)
+        value, taken, optimal = solve_bb(capacity, values, weights, HYBRID, MAX_TIME, [value, taken])
+
     taken = set(taken)
     return value, [1 if i in taken else 0 for i in range(n)], optimal
 
