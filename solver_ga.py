@@ -125,8 +125,9 @@ def update_state(values_weights, value, capacity, added, removed):
     #assert value > 0, '\nadded=%s\removed=%s' % (added, removed)
     return value, capacity    
     
-    
-total_capacity = 4743183
+                 
+total_capacity = 1000000
+               # 4743183
 
 def get_score(value, capacity):
     if capacity >= 0:
@@ -418,7 +419,7 @@ def solve_ga(capacity, values, weights, max_time):
         
         #cnt = next(counter)
         if cnt % 1000 == 0:
-            #print '***', cnt
+            print '***', cnt
             if timer.expired():
                 for _, q in Q:
                     if q.capacity >= 0:
